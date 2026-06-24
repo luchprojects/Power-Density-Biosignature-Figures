@@ -292,7 +292,26 @@ FIGURE_COMPACT_OBJECTS_PDF = FIGURES_DIR / "figure_compact_objects.pdf"
 FIGURE_COMPACT_PDF = FIGURE_COMPACT_OBJECTS_PDF  # backward-compatible alias
 FIGURE_WD_DUBUS_UNCERTAINTIES_PDF = FIGURES_DIR / "figure_wd_dubus_uncertainties.pdf"
 FIGURE_SMBH_PDF = FIGURES_DIR / "figure_smbh_seyfert1.pdf"
+FIGURE_BIOLOGY_TRENDS_PDF = FIGURES_DIR / "figure_biology_trends.pdf"
+FIGURE_COMPACT_OBJECTS_TRENDS_PDF = FIGURES_DIR / "figure_compact_objects_trends.pdf"
+FIGURE_UNIFIED_MASTER_TRENDS_PDF = FIGURES_DIR / "figure_unified_master_trends.pdf"
 FIGURE_REFERENCE_DOC = DOCS_DIR / "Figure_Dataset_Reference_Analysis.docx"
+
+# Power-law trend-line styling (OLS fits in log10-log10 space; see scripts/figure_trends.py).
+# Distinct from the solid literature reference lines so fits read as derived, not measured.
+TREND_FIT_LINESTYLE_GROUP = "--"      # per-group (segment / category) fit
+TREND_FIT_LINESTYLE_OVERALL = "-."    # global fit across all points
+TREND_FIT_LINEWIDTH_GROUP = 1.3
+TREND_FIT_LINEWIDTH_OVERALL = 1.8
+TREND_FIT_ALPHA = 0.9
+TREND_OVERALL_COLOR = "#1a1a2e"       # neutral dark — domain-agnostic global fit
+TREND_FIT_SAMPLE_COUNT = 100
+
+# Unified-master cross-domain trend lines — distinct from the empirical scatter palette
+# (YSO/WD/NS/BH + biology segments) and the literature reference lines.
+TREND_ALL_SYSTEMS_COLOR = "#111827"   # near-black — headline cross-domain fit (dash-dot, heavy)
+TREND_ALL_BIOLOGY_COLOR = "#7e22ce"   # violet — biology overall fit (dashed)
+TREND_ALL_COMPACT_COLOR = "#be123c"   # crimson — compact overall fit (dashed)
 
 PROCESSED_COMPACT_CSV = PROCESSED_DIR / "processed_compact_results.csv"
 PROCESSED_SMBH_CSV = PROCESSED_DIR / "processed_smbh_results.csv"
