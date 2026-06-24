@@ -68,8 +68,8 @@ def _coerce_numeric(series: pd.Series) -> pd.Series:
 
 
 def _biology_section_end(raw: pd.DataFrame) -> int:
-    for index, value in enumerate(raw.iloc[:, 0].astype(str)):
-        if value.strip().startswith("II)"):
+    for index, value in enumerate(raw.iloc[:, 0]):
+        if isinstance(value, str) and value.strip().startswith("II)"):
             return index
     return len(raw)
 

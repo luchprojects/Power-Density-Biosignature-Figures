@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-06-22T22:32:23.196551+00:00",
+  "generated_utc": "2026-06-24T17:03:56.064420+00:00",
   "mass_unit": "kg",
   "power_density_unit": "W.kg-1",
   "van_duin_limit_w_per_kg": 100000.0,
@@ -37,12 +37,12 @@
   },
   "biology_source": "van Duin (2024) MOESM1 ERD Table Section I",
   "figures": {
-    "unified_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_unified_master.pdf",
-    "biology_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_biology.pdf",
-    "yso_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_yso.pdf",
-    "compact_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_compact_objects.pdf",
-    "compact_objects_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_compact_objects.pdf",
-    "wd_uncertainties_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_wd_dubus_uncertainties.pdf"
+    "unified_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_unified_master.pdf",
+    "biology_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_biology.pdf",
+    "yso_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_yso.pdf",
+    "compact_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_compact_objects.pdf",
+    "compact_objects_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_compact_objects.pdf",
+    "wd_uncertainties_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_wd_dubus_uncertainties.pdf"
   },
   "empirical_colors": {
     "young_stellar_objects": {

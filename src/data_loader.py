@@ -69,6 +69,17 @@ SKIP_NAME_PATTERNS: tuple[str, ...] = (
 
 NUMERIC_TOKEN = re.compile(r"^[\d,\.Ee+\-]+$")
 
+# Vidal (2020) Tables 3 (NS) and 4 (BH) tabulate ERD a factor of 1000 too high:
+# the values were computed as L/M in W.kg-1 (mass in kg) but placed in the
+# "erg.s-1.g-1" column without the per-gram (g->kg) step, leaving a x1000 (g/kg)
+# slip. With the paper's intended efficiency eta=0.1 = GM/(c^2 R), the tabulated
+# Mdot and ERD only close (eta_implied -> 0.1) after dividing ERD by 1000.
+# WD Table 2 (eta=2.3e-4) is unaffected. See review note / git history.
+VIDAL_NS_BH_ERD_GRAM_KILOGRAM_CORRECTION = 1.0e-3
+_ERD_CORRECTED_CATEGORIES = frozenset(
+    {config.CATEGORY_NEUTRON_STARS, config.CATEGORY_TRANSIENT_BLACK_HOLES}
+)
+
 
 def _normalize_header(header: str) -> str:
     cleaned = header.strip().lower().replace("_", " ")
@@ -237,12 +248,16 @@ def _parse_vidal_pdf_table(section_title: str, category: str, next_title: str) -
         if name.upper() == "AVERAGE":
             break
 
+        erd_value = float(erd_token.replace(",", "."))
+        if category in _ERD_CORRECTED_CATEGORIES:
+            erd_value *= VIDAL_NS_BH_ERD_GRAM_KILOGRAM_CORRECTION
+
         records.append(
             {
                 "name": name,
                 "mass_msun": float(mass_token.replace(",", ".")),
                 "mdot_msun_yr": float(mdot_token.replace(",", ".")),
-                "erd_erg_s_g": float(erd_token.replace(",", ".")),
+                "erd_erg_s_g": erd_value,
                 "category": category,
             }
         )
