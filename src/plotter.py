@@ -181,8 +181,14 @@ def _scatter_geometric_layer(
     alpha: float | None = None,
     marker: str | None = None,
     size: float | None = None,
+    unfilled: bool = False,
 ) -> None:
-    """Strict geometric-decoupling scatter — marker geometry replaces alpha-blend masking."""
+    """Strict geometric-decoupling scatter — marker geometry replaces alpha-blend masking.
+
+    With ``unfilled=True`` the markers are open circles (transparent face, colored
+    edge) so a dense cohort reads as outlines rather than a solid blob — used for
+    the Cataclysmic Variables on the unified master.
+    """
     spec = _geometric_layer_spec(layer)
     x_arr = np.asarray(x, dtype=float)
     y_arr = np.asarray(y, dtype=float)
@@ -193,7 +199,12 @@ def _scatter_geometric_layer(
         "zorder": spec.zorder,
         "label": label,
     }
-    if layer in {"background", "midground"}:
+    if unfilled:
+        edge = color or spec.facecolor
+        scatter_kwargs["facecolors"] = "none"
+        scatter_kwargs["edgecolors"] = edge
+        scatter_kwargs["linewidths"] = config.EMPIRICAL_MARKER_EDGEWIDTH_UNFILLED
+    elif layer in {"background", "midground"}:
         fill = color or spec.facecolor
         scatter_kwargs["c"] = fill
         scatter_kwargs["edgecolors"] = "none"
@@ -776,6 +787,16 @@ def _plot_compact_scatter(
         if config.GEOMETRIC_DECOUPLING_ENABLED:
             category_color = config.COMPACT_CATEGORY_COLORS[category]
             category_alpha = _compact_category_alpha(category, mode)
+            # Cataclysmic Variables on the unified master render as open (unfilled)
+            # green circles so the dense cohort reads as outlines, not a solid blob.
+            # Open circles deposit little ink, so they need a visible edge opacity
+            # rather than the low fill alpha used for solid markers.
+            unfilled = (
+                mode == "unified"
+                and category == config.CATEGORY_CATACLYSMIC_VARIABLES
+            )
+            if unfilled:
+                category_alpha = config.EMPIRICAL_MARKER_ALPHA_UNFILLED
             if show_errors:
                 xerr_col = rows["mass_kg_err"] if "mass_kg_err" in rows.columns else None
                 if xerr_col is None and "mass_g_err" in rows.columns:
@@ -808,14 +829,9 @@ def _plot_compact_scatter(
                     label=legend_label,
                     color=category_color,
                     alpha=category_alpha,
+                    unfilled=unfilled,
                 )
             continue
-
-        marker_alpha = (
-            config.PLOT_MARKER_ALPHA_WHITE_DWARFS_UNIFIED
-            if mode == "unified" and category == config.CATEGORY_CATACLYSMIC_VARIABLES
-            else None
-        )
 
         if show_errors:
             xerr_col = rows["mass_kg_err"] if "mass_kg_err" in rows.columns else None
@@ -847,7 +863,6 @@ def _plot_compact_scatter(
                 color=config.COMPACT_CATEGORY_COLORS[category],
                 label=legend_label,
                 zorder=6,
-                alpha=marker_alpha,
             )
 
 

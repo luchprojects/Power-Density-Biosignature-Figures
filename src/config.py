@@ -143,6 +143,11 @@ CATEGORY_DISPLAY_NAMES: dict[str, str] = {
 # Universal empirical marker policy — solid filled circles
 EMPIRICAL_MARKER_SHAPE = "o"
 EMPIRICAL_MARKER_SIZE = 3.5
+# Open/unfilled markers (Cataclysmic Variables on unified master): green border,
+# transparent face. Edge ink is sparse, so the opacity sits higher than the dense
+# solid-fill alpha used elsewhere.
+EMPIRICAL_MARKER_EDGEWIDTH_UNFILLED = 0.8
+EMPIRICAL_MARKER_ALPHA_UNFILLED = 0.8
 # Sparse series (YSO, NS, BH, prok/euk biology) — drawn on top, stay readable
 EMPIRICAL_MARKER_ALPHA = 0.85
 # Dense clouds (738 multicellular, 130 WDs on unified) — translucent underlayers
@@ -202,7 +207,6 @@ PLOT_MARKER_ALPHA_BIOLOGY = EMPIRICAL_MARKER_ALPHA
 PLOT_MARKER_ALPHA_YSO = EMPIRICAL_MARKER_ALPHA
 PLOT_MARKER_ALPHA_COMPACT = EMPIRICAL_MARKER_ALPHA
 PLOT_MARKER_ALPHA_BIOLOGY_MULTICELLULAR = 0.45
-PLOT_MARKER_ALPHA_WHITE_DWARFS_UNIFIED = EMPIRICAL_MARKER_ALPHA_DENSE
 PLOT_MARKER_ALPHA_WHITE_DWARFS = 0.12  # n=130 CV/WD cohort — dense overlay
 
 # ---------------------------------------------------------------------------
