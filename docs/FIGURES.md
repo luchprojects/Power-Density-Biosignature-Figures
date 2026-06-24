@@ -27,15 +27,14 @@ All figures share ApJ-style log–log axes unless noted. Power density is always
 
 **Literature overlays (lines only, not scatter)**
 
-- Chaisson (2003/2011) living envelope: 0.1–10 W·kg⁻¹ band.
-- Chaisson (2001) benchmarks: Sun, human, society.
+- Chaisson (2001) benchmark: modern society only (~50 W·kg⁻¹).
 - van Duin (2024) stability boundary: 10⁵ W·kg⁻¹.
 
 **Code**
 
 - Mode: `"unified"` in `plotter.create_domain_figure()`
-- Draw order: YSO (background) → compact (mid) → biology diamonds (foreground)
-- No error bars on this panel.
+- Draw order: compact (mid) → YSO rings → biology circles on top. WDs: **green** = Dubus Table A.2 (general CVs), **fuchsia** = Table A.3 (nova-like); YSO: open yellow rings.
+- No error bars on this panel (WD uncertainties: `figure_wd_dubus_uncertainties.pdf`).
 
 ---
 
@@ -47,9 +46,9 @@ All figures share ApJ-style log–log axes unless noted. Power density is always
 
 **Math:** Φ_m = ERD_wkg directly from MOESM1 Section I (already W·kg⁻¹).
 
-**Segments:** Prokaryotes, Eukaryotes, Multicellular — filled circles (no marker outline).
+**Segments:** Prokaryotes (brown), Eukaryotes (slate blue), Multicellular (forest green) — filled circles.
 
-**Overlays:** Chaisson envelope + benchmarks; van Duin 10⁵ W·kg⁻¹ line.
+**Overlays:** Chaisson (2001) modern society benchmark; van Duin 10⁵ W·kg⁻¹ line.
 
 **Code:** `create_domain_figure(mode="biology")` → `_plot_von_duin_biology_scatter()`.
 
@@ -102,7 +101,8 @@ Tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
 **Data**
 
 - Positions: same as compact WD rows.
-- Uncertainties: `data/compact/dubus_2018_wd_uncertainties.csv` (parsed from Dubus et al. 2018 A&A Tables A.2–A.3).
+- Uncertainties: `data/compact/dubus_2018_wd_uncertainties.csv` (Dubus et al. 2018 A&A Tables **A.2** + **A.3**; `dubus_table` column tags each system).
+- **Colors:** green = Table A.2 general CVs (110); fuchsia = Table A.3 nova-like CVs (20).
 
 **Math**
 
@@ -113,11 +113,35 @@ Tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
 
 ---
 
+## 6. `figure_smbh_seyfert1.pdf`
+
+**Purpose:** Separate test panel for Seyfert 1 supermassive black holes — **not** on the unified master.
+
+**Data**
+
+| Field | Source |
+|-------|--------|
+| 16 Seyfert 1 systems | Vidal (2020) Table 5, parsed from `references/Vidal-2020-ERD…pdf` |
+| Cached CSV | `data/compact/vidal_2020_table5_smbh_seyfert1.csv` |
+| Original literature | Meyer-Hofmeister & Meyer (2011) |
+
+**Math**
+
+- M_BH, Ṁ, and tabulated ERD (erg·s⁻¹·g⁻¹) from Vidal Table 5 (η = 0.1).
+- Φ_m uses tabulated ERD when present; Schwarzschild radius for the gravitational track.
+
+**Overlays:** Chaisson modern society benchmark only (van Duin line off-scale on this zoom).
+
+**Code:** `load_supermassive_black_holes()` → `create_domain_figure(mode="smbh")` → `_plot_smbh_scatter()`.
+
+---
+
 ## Processed outputs (after `main.py`)
 
 | File | Contents |
 |------|----------|
-| `processed/processed_compact_results.csv` | All compact tracks + Dubus uncertainty columns |
+| `processed/processed_compact_results.csv` | All compact tracks + Dubus uncertainty columns; `phi_source` marks tabulated ERD vs Ṁ-derived Φ_m |
+| `processed/processed_smbh_results.csv` | Seyfert 1 SMBH Φ_m (Vidal Table 5) |
 | `processed/processed_yso_results.csv` | YSO Φ_m, masses, L_acc |
 | `processed/processed_von_duin_biology.csv` | Biology scatter ready to plot |
 | `processed/data_tracking_ledger.csv` | Figure ↔ data ↔ physics audit trail |
@@ -129,4 +153,4 @@ Tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
 
 All colors, axis limits, and paths: **`config.py`**
 
-Key constants: `POWER_DENSITY_UNIT = "W.kg-1"`, `DOMAIN_*_MASS`, `DOMAIN_*_RHO`, `COMPACT_CATEGORY_COLORS`.
+Key constants: `POWER_DENSITY_UNIT = "W.kg-1"`, `DOMAIN_*_MASS`, `DOMAIN_*_RHO`, `DUBUS_WD_SUBTYPE_COLORS`, biology segment colors (`COLOR_PROKARYOTES`, `COLOR_EUKARYOTES`, `COLOR_MULTICELLULAR`).

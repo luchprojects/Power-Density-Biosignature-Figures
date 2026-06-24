@@ -44,7 +44,7 @@ COLUMN_ALIASES: dict[str, str] = {
     "radius_au": "radius_au",
     "power density (w.kg-1)": "power_density_reported_wkg",
     "power_density_w_per_kg": "power_density_reported_wkg",
-    "erd (erg.s-1.g-1) assuming 2.3e-4 accretion efficiency": "erd_erg_s_g",
+    "erd (erg.s-1.g-1) assuming 2.3e-4 accretion efficiency": "erd_erg_s_g",  # WD CSV header only
     "erd_erg_s_g": "erd_erg_s_g",
 }
 
@@ -129,6 +129,8 @@ def _normalize_category(value: object, fallback: str | None = None) -> str:
     if key in SHEET_NAME_TO_CATEGORY:
         return SHEET_NAME_TO_CATEGORY[key]
     if key in config.COMPACT_OBJECT_CATEGORIES:
+        return key
+    if key == config.CATEGORY_SUPERMASSIVE_BLACK_HOLES:
         return key
     raise ValueError(f"Unrecognized category label: {value}")
 
@@ -289,6 +291,34 @@ def _load_transient_black_hole_table() -> pd.DataFrame:
     )
 
 
+def _load_supermassive_black_hole_table() -> pd.DataFrame:
+    """Vidal (2020) Table 5 — 16 Seyfert 1 SMBHs (Meyer-Hofmeister & Meyer 2011)."""
+    return _parse_vidal_pdf_table(
+        section_title="(see Table 5).",
+        category=config.CATEGORY_SUPERMASSIVE_BLACK_HOLES,
+        next_title="Table 5 - Energy rate density of 16 supermassive black holes",
+    )
+
+
+def assemble_smbh_csv(output_path: Path | None = None) -> Path:
+    """Build cached CSV for Vidal (2020) Table 5 SMBH sample."""
+    target = output_path or config.SMBH_OBJECTS_CSV
+    target.parent.mkdir(parents=True, exist_ok=True)
+    frame = _load_supermassive_black_hole_table()
+    if frame.empty:
+        raise ValueError("Vidal (2020) Table 5 SMBH table parsed zero rows.")
+    frame.to_csv(target, index=False)
+    return target
+
+
+def load_supermassive_black_holes(path: Path | None = None, rebuild: bool = False) -> pd.DataFrame:
+    """Load Seyfert 1 SMBH sample — separate from stellar compact-object master table."""
+    csv_path = path or config.SMBH_OBJECTS_CSV
+    if rebuild or not csv_path.exists():
+        assemble_smbh_csv(csv_path)
+    return normalize_dataframe(pd.read_csv(csv_path))
+
+
 def assemble_compact_objects_csv(output_path: Path | None = None) -> Path:
     """
     Build ``data/Power density data.csv`` from verified workspace sources.
@@ -310,7 +340,7 @@ def assemble_compact_objects_csv(output_path: Path | None = None) -> Path:
     return target
 
 
-def load_compact_objects(path: Path | None = None, rebuild: bool = True) -> pd.DataFrame:
+def load_compact_objects(path: Path | None = None, rebuild: bool = False) -> pd.DataFrame:
     """Load compact-object populations from the canonical CSV path."""
     csv_path = path or config.COMPACT_OBJECTS_CSV
     if rebuild or not csv_path.exists():
@@ -425,7 +455,7 @@ def _build_mdots_forclement_from_compilation(output_path: Path) -> Path:
     return output_path
 
 
-def load_mdots_forclement(path: Path | None = None, rebuild: bool = True) -> pd.DataFrame:
+def load_mdots_forclement(path: Path | None = None, rebuild: bool = False) -> pd.DataFrame:
     """
     Load YSO accretion parameters with Somers (2020) SPOTS-corrected masses.
 

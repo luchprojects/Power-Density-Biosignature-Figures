@@ -20,9 +20,8 @@ DOC_PATH = config.FIGURE_REFERENCE_DOC
 
 # Shared reference-overlay blurb (biology + unified figures only).
 CHAISSON_OVERLAY_NOTE = (
-    f"Literature overlays (not data): Chaisson living envelope "
-    f"({config.CHAISSON_LIVING_ENVELOPE_MIN_W_PER_KG:g}–{config.CHAISSON_LIVING_ENVELOPE_MAX_W_PER_KG:g} W·kg⁻¹; "
-    "Chaisson 2003, 2011); Chaisson (2001) benchmarks for the Sun, a human body, and modern society; "
+    "Literature overlays (not data): Chaisson (2001) modern society benchmark "
+    f"(~{config.CHAISSON_2001_SOCIETY_W_PER_KG:g} W·kg⁻¹); "
     f"van Duin (2024) stability limit at 10⁵ W·kg⁻¹."
 )
 
@@ -40,6 +39,7 @@ def _figure_entries(
     ns_n: int,
     bh_n: int,
     bio_n: int,
+    smbH_n: int,
 ) -> list[tuple[str, dict[str, str]]]:
     return [
         (
@@ -66,7 +66,9 @@ def _figure_entries(
                     "Compact objects: η = GM/(Rc²), L = η Ṁ c², Φ_m = L/M; tabulated ERD used when available."
                 ),
                 "Notes": (
-                    f"{CHAISSON_OVERLAY_NOTE} Scatter only — no error bars on this panel."
+                    f"{CHAISSON_OVERLAY_NOTE} WDs: green = Dubus Table A.2 (general CVs), "
+                    "fuchsia = Table A.3 (nova-like); YSO: open yellow rings on top. "
+                    "No error bars on this panel — see figure_wd_dubus_uncertainties.pdf."
                 ),
             },
         ),
@@ -117,7 +119,10 @@ def _figure_entries(
                 "Equations": (
                     "η_grav = GM/(Rc²); L = η Ṁ c²; Φ_m = L/M. Tabulated ERD overrides the computed value when both are present."
                 ),
-                "Notes": "No YSO overlay. van Duin stability line shown; no Chaisson envelope.",
+                "Notes": (
+                    "WD colors: green = Dubus Table A.2 (general CVs), fuchsia = Table A.3 (nova-like). "
+                    "No YSO overlay. van Duin stability line shown; no Chaisson overlays."
+                ),
             },
         ),
         (
@@ -137,7 +142,33 @@ def _figure_entries(
                     "Vertical errors: asymmetric 68% Monte Carlo interval on Ṁ, propagated to Φ_m "
                     "at the same accretion efficiency as each plotted point."
                 ),
-                "Notes": "Error bars only on this figure. No literature reference overlays.",
+                "Notes": (
+                    "Error bars only on this figure. Green = Dubus Table A.2; fuchsia = Table A.3. "
+                    "No literature reference overlays."
+                ),
+            },
+        ),
+        (
+            "figure_smbh_seyfert1.pdf",
+            {
+                "Purpose": (
+                    "Test panel for Seyfert 1 supermassive black holes — separate from the unified "
+                    "master continuum."
+                ),
+                "Data source": (
+                    f"Vidal (2020) Table 5 — {smbH_n} Seyfert 1 SMBHs from Meyer-Hofmeister & Meyer (2011), "
+                    "parsed from references/Vidal-2020 PDF into "
+                    "data/compact/vidal_2020_table5_smbh_seyfert1.csv."
+                ),
+                "Equations": (
+                    "Tabulated ERD (erg·s⁻¹·g⁻¹) at η = 0.1 per Vidal; Φ_m = L/M in W·kg⁻¹. "
+                    "Schwarzschild radius used for the gravitational-efficiency track when computing "
+                    "from Ṁ; tabulated ERD overrides when both are present."
+                ),
+                "Notes": (
+                    "Not plotted on figure_unified_master.pdf. Chaisson modern society benchmark shown; "
+                    "no error bars (none in source table)."
+                ),
             },
         ),
     ]
@@ -150,6 +181,7 @@ def build_document(
     ns_n: int = 0,
     bh_n: int = 0,
     bio_n: int = 0,
+    smbH_n: int = 0,
 ) -> Path:
     from docx import Document
     from docx.shared import Pt
@@ -170,7 +202,7 @@ def build_document(
     doc.add_paragraph(
         "Open a terminal in the project folder and run:  python main.py\n"
         "Requires: pip install -r requirements.txt (once). "
-        "Outputs: five PDFs in figures/ and processed tables in processed/."
+        "Outputs: six PDFs in figures/ and processed tables in processed/."
     )
 
     doc.add_heading("Quantity plotted", level=1)
@@ -186,6 +218,7 @@ def build_document(
         ns_n=ns_n,
         bh_n=bh_n,
         bio_n=bio_n,
+        smbH_n=smbH_n,
     ):
         doc.add_heading(filename, level=2)
         for label, text in fields.items():
@@ -206,12 +239,16 @@ def build_document_from_pipeline(
     compact_results,
     yso_results,
     biology_results=None,
+    smbH_results=None,
 ) -> Path:
     """Build the Word document using live pipeline DataFrame counts."""
     grav = compact_results[compact_results["track"] == "gravitational"]
     bio_n = 0
     if biology_results is not None and not biology_results.empty:
         bio_n = int(len(biology_results))
+    smbH_n = 0
+    if smbH_results is not None and not smbH_results.empty:
+        smbH_n = int(len(smbH_results[smbH_results["track"] == "gravitational"]))
 
     return build_document(
         yso_n=len(yso_results),
@@ -219,6 +256,7 @@ def build_document_from_pipeline(
         ns_n=int((grav["category"] == config.CATEGORY_NEUTRON_STARS).sum()),
         bh_n=int((grav["category"] == config.CATEGORY_TRANSIENT_BLACK_HOLES).sum()),
         bio_n=bio_n,
+        smbH_n=smbH_n,
     )
 
 

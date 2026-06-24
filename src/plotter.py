@@ -1,10 +1,9 @@
 """
 Unified master figure for the power-density evolutionary continuum.
 
-ApJ-compliant log-log charts: geometric decoupling scatter layers (filled YSO background,
-filled compact mid-ground with per-category colors, biology foreground with per-segment colors —
-diamonds on unified master, circles on biology panel); Chaisson and van Duin literature
-references as solid colored lines.
+ApJ-compliant log-log charts: geometric decoupling scatter layers (YSO open rings on unified
+master, solid compact mid-ground with per-category colors, biology on top with per-segment
+filled circles); Chaisson and van Duin literature references as solid colored lines.
 """
 
 from __future__ import annotations
@@ -29,6 +28,7 @@ FigureMode = Literal[
     "yso",
     "compact",
     "wd_uncertainties",
+    "smbh",
 ]
 
 # Unified master — hard log viewport in SI (kg, W kg^-1)
@@ -163,7 +163,7 @@ def _resolve_interval_errors(
     return None
 
 
-GeometricLayer = Literal["background", "midground", "foreground"]
+GeometricLayer = Literal["background", "midground"]
 
 
 def _geometric_layer_spec(layer: GeometricLayer) -> config.GeometricLayerSpec:
@@ -181,6 +181,7 @@ def _scatter_geometric_layer(
     alpha: float | None = None,
     marker: str | None = None,
     size: float | None = None,
+    zorder: float | None = None,
     unfilled: bool = False,
 ) -> None:
     """Strict geometric-decoupling scatter — marker geometry replaces alpha-blend masking.
@@ -196,7 +197,7 @@ def _scatter_geometric_layer(
         "s": spec.size if size is None else size,
         "marker": spec.marker if marker is None else marker,
         "alpha": spec.alpha if alpha is None else alpha,
-        "zorder": spec.zorder,
+        "zorder": spec.zorder if zorder is None else zorder,
         "label": label,
     }
     if unfilled:
@@ -214,6 +215,185 @@ def _scatter_geometric_layer(
         scatter_kwargs["edgecolors"] = spec.edgecolor
         scatter_kwargs["linewidths"] = spec.linewidth
     axis.scatter(x_arr, y_arr, **scatter_kwargs)
+
+
+def _scatter_ring_geometric_layer(
+    axis: Axes,
+    x: np.ndarray | pd.Series,
+    y: np.ndarray | pd.Series,
+    *,
+    layer: GeometricLayer,
+    label: str,
+    edgecolor: str,
+    linewidth: float | None = None,
+    alpha: float | None = None,
+    size: float | None = None,
+    zorder: float | None = None,
+) -> None:
+    """Open-ring scatter — transparent centre, coloured edge."""
+    spec = _geometric_layer_spec(layer)
+    axis.scatter(
+        np.asarray(x, dtype=float),
+        np.asarray(y, dtype=float),
+        s=size if size is not None else config.YSO_UNIFIED_MARKER_SIZE,
+        marker="o",
+        facecolors="none",
+        edgecolors=edgecolor,
+        linewidths=linewidth if linewidth is not None else config.YSO_UNIFIED_RING_LINEWIDTH,
+        alpha=alpha if alpha is not None else config.YSO_UNIFIED_RING_ALPHA,
+        zorder=spec.zorder if zorder is None else zorder,
+        label=label,
+    )
+
+
+def _wd_dubus_plot_groups(rows: pd.DataFrame) -> list[tuple[pd.DataFrame, str, str]]:
+    """Split WD rows by Dubus Table A.2 vs A.3 when annotated."""
+    if "dubus_table" not in rows.columns or rows["dubus_table"].isna().all():
+        return [
+            (
+                rows,
+                config.COMPACT_CATEGORY_COLORS[config.CATEGORY_CATACLYSMIC_VARIABLES],
+                config.CATEGORY_DISPLAY_NAMES[config.CATEGORY_CATACLYSMIC_VARIABLES],
+            )
+        ]
+
+    groups: list[tuple[pd.DataFrame, str, str]] = []
+    for table_key in config.DUBUS_TABLE_KEYS:
+        subset = rows[rows["dubus_table"] == table_key]
+        if subset.empty:
+            continue
+        groups.append(
+            (
+                subset,
+                config.DUBUS_WD_SUBTYPE_COLORS[table_key],
+                rf"{config.DUBUS_WD_SUBTYPE_LABELS[table_key]} ($n={len(subset)}$)",
+            )
+        )
+
+    unmatched = rows[rows["dubus_table"].isna()]
+    if not unmatched.empty:
+        groups.append(
+            (
+                unmatched,
+                config.COLOR_WHITE_DWARFS,
+                rf"Cataclysmic Variables (White Dwarfs) ($n={len(unmatched)}$)",
+            )
+        )
+    return groups
+
+
+def _plot_wd_rows(
+    axis: Axes,
+    rows: pd.DataFrame,
+    *,
+    color: str,
+    legend_label: str,
+    show_errors: bool,
+    mode: FigureMode,
+    category_alpha: float | None,
+) -> None:
+    """Plot one WD Dubus subgroup (solid scatter or error bars)."""
+    x_mass = _mass_kg_from_frame(rows)
+    y_rho = _rho_w_per_kg_from_frame(rows)
+
+    if config.GEOMETRIC_DECOUPLING_ENABLED:
+        if show_errors:
+            xerr_col = rows["mass_kg_err"] if "mass_kg_err" in rows.columns else None
+            y_lo_col = (
+                rows["power_density_w_per_kg_lo"]
+                if "power_density_w_per_kg_lo" in rows.columns
+                else None
+            )
+            y_hi_col = (
+                rows["power_density_w_per_kg_hi"]
+                if "power_density_w_per_kg_hi" in rows.columns
+                else None
+            )
+            _errorbar_geometric_layer(
+                axis,
+                x_mass,
+                y_rho,
+                layer="midground",
+                label=legend_label,
+                color=color,
+                alpha=category_alpha,
+                xerr_col=xerr_col,
+                y_lo_col=y_lo_col,
+                y_hi_col=y_hi_col,
+                delicate=True,
+            )
+        else:
+            unfilled = mode == "unified"
+            wd_alpha = (
+                config.EMPIRICAL_MARKER_ALPHA_UNFILLED
+                if unfilled
+                else category_alpha
+            )
+            _scatter_geometric_layer(
+                axis,
+                x_mass,
+                y_rho,
+                layer="midground",
+                label=legend_label,
+                color=color,
+                alpha=wd_alpha,
+                size=config.COMPACT_WD_UNIFIED_MARKER_SIZE if unfilled else None,
+                unfilled=unfilled,
+            )
+        return
+
+    if show_errors:
+        xerr_col = rows["mass_kg_err"] if "mass_kg_err" in rows.columns else None
+        y_lo_col = (
+            rows["power_density_w_per_kg_lo"]
+            if "power_density_w_per_kg_lo" in rows.columns
+            else None
+        )
+        y_hi_col = (
+            rows["power_density_w_per_kg_hi"]
+            if "power_density_w_per_kg_hi" in rows.columns
+            else None
+        )
+        xerr = _resolve_interval_errors(
+            np.asarray(x_mass, dtype=float),
+            symmetric_err=xerr_col,
+        )
+        yerr = _resolve_interval_errors(
+            np.asarray(y_rho, dtype=float),
+            lo=y_lo_col,
+            hi=y_hi_col,
+        )
+        if xerr is not None or yerr is not None:
+            axis.errorbar(
+                x_mass,
+                y_rho,
+                xerr=xerr,
+                yerr=yerr,
+                fmt="none",
+                linestyle="none",
+                elinewidth=config.ERRORBAR_ELINEWIDTH_ZOOM,
+                capsize=config.ERRORBAR_CAPSIZE_ZOOM,
+                capthick=config.ERRORBAR_ELINEWIDTH_ZOOM,
+                ecolor=mcolors.to_rgba(color, config.ERRORBAR_ALPHA_ZOOM),
+                zorder=5,
+            )
+        axis.plot(
+            x_mass,
+            y_rho,
+            label=legend_label,
+            zorder=6,
+            **_empirical_marker_kwargs(color),
+        )
+    else:
+        _scatter_series(
+            axis,
+            x_mass,
+            y_rho,
+            color=color,
+            label=legend_label,
+            zorder=6,
+            alpha=None,
+        )
 
 
 def _errorbar_geometric_layer(
@@ -436,6 +616,8 @@ def _axis_limits_for_mode(mode: FigureMode) -> tuple[tuple[float, float], tuple[
         return (config.DOMAIN_COMPACT_MASS, config.DOMAIN_COMPACT_RHO)
     if mode == "wd_uncertainties":
         return (config.DOMAIN_COMPACT_MASS, config.DOMAIN_COMPACT_RHO)
+    if mode == "smbh":
+        return (config.DOMAIN_SMBH_MASS, config.DOMAIN_SMBH_RHO)
     raise ValueError(f"Unknown figure mode: {mode!r}")
 
 
@@ -470,82 +652,37 @@ def _add_van_duin_bound(axis: Axes, rho_limits: tuple[float, float]) -> None:
         )
 
 
-def _add_chaisson_living_references(
+def _add_chaisson_reference_overlays(
     axis: Axes,
     mass_limits: tuple[float, float],
     rho_limits: tuple[float, float],
 ) -> None:
-    """
-    Chaisson literature overlays — analytical reference geometry, not CSV scatter.
-
-    Each reference uses one distinct solid color (see config.REFERENCE_OVERLAY_REGISTRY).
-    """
-    env_lo = config.CHAISSON_LIVING_ENVELOPE_MIN_W_PER_KG
-    env_hi = config.CHAISSON_LIVING_ENVELOPE_MAX_W_PER_KG
-    if rho_limits[0] < env_hi and rho_limits[1] > env_lo:
-        span_lo = max(env_lo, rho_limits[0])
-        span_hi = min(env_hi, rho_limits[1])
-        axis.axhspan(
-            span_lo,
-            span_hi,
-            xmin=0.0,
-            xmax=1.0,
-            facecolor=config.COLOR_REF_CHAISSON_ENVELOPE,
-            edgecolor="none",
-            alpha=config.CHAISSON_ENVELOPE_FILL_ALPHA,
-            zorder=1,
-        )
+    """Chaisson (2001) modern society benchmark — literature overlay, not CSV scatter."""
+    del mass_limits  # society benchmark is a horizontal Φ_m level only
+    if rho_limits[0] <= config.CHAISSON_2001_SOCIETY_W_PER_KG <= rho_limits[1]:
         _reference_hline(
             axis,
-            span_lo,
-            color=config.COLOR_REF_CHAISSON_ENVELOPE,
-            label=config.CHAISSON_ENVELOPE_LEGEND_LABEL,
-            zorder=2,
-        )
-        _reference_hline(
-            axis,
-            span_hi,
-            color=config.COLOR_REF_CHAISSON_ENVELOPE,
-            label="_nolegend_",
-            zorder=2,
-        )
-
-    benchmark_specs: tuple[tuple[float, str, str], ...] = (
-        (
-            config.CHAISSON_SUN_POWER_DENSITY_W_PER_KG,
-            config.CHAISSON_SUN_BENCHMARK_LABEL,
-            config.COLOR_REF_CHAISSON_SUN,
-        ),
-        (
-            config.CHAISSON_2001_HUMAN_W_PER_KG,
-            config.CHAISSON_HUMAN_BENCHMARK_LABEL,
-            config.COLOR_REF_CHAISSON_HUMAN,
-        ),
-        (
             config.CHAISSON_2001_SOCIETY_W_PER_KG,
-            config.CHAISSON_SOCIETY_BENCHMARK_LABEL,
-            config.COLOR_REF_CHAISSON_SOCIETY,
-        ),
-    )
-    for rho, label, color in benchmark_specs:
-        if rho_limits[0] <= rho <= rho_limits[1]:
-            _reference_hline(axis, rho, color=color, label=label, zorder=2)
+            color=config.COLOR_REF_CHAISSON_SOCIETY,
+            label=config.CHAISSON_SOCIETY_BENCHMARK_LABEL,
+            zorder=2,
+        )
 
 
 def _apply_apj_legend(axis: Axes, mode: FigureMode | str) -> None:
     """Opaque white legend card — per-figure anchor avoids collisions."""
-    layout = config.LEGEND_LAYOUT.get(mode, {"loc": config.LEGEND_LOC_UPPER_RIGHT})
+    layout = dict(config.LEGEND_LAYOUT.get(mode, {"loc": config.LEGEND_LOC_UPPER_RIGHT}))
     legend = axis.legend(
-        fontsize=config.PLOT_LEGEND_SIZE,
+        fontsize=layout.pop("fontsize", config.PLOT_LEGEND_SIZE),
         frameon=True,
         facecolor="#ffffff",
         edgecolor="#e2e8f0",
         framealpha=config.LEGEND_FRAMEALPHA,
         markerscale=1.0,
-        handletextpad=0.4,
-        borderaxespad=0.5,
-        handlelength=2.0,
-        labelspacing=0.4,
+        handletextpad=layout.pop("handletextpad", 0.4),
+        borderaxespad=layout.pop("borderaxespad", 0.5),
+        handlelength=layout.pop("handlelength", 2.0),
+        labelspacing=layout.pop("labelspacing", 0.4),
         **layout,
     )
     legend.set_zorder(config.LEGEND_ZORDER)
@@ -561,12 +698,6 @@ def _is_permitted_analytical_line(label: str, linestyle: str) -> bool:
     if "Chaisson" in label and linestyle in ("-", "solid"):
         return True
     if label in ("_nolegend_",):
-        return True
-    if "Human Metabolism" in label and linestyle in ("-", "solid"):
-        return True
-    if "Star" in label and "protostar" in label and linestyle in ("-", "solid"):
-        return True
-    if "Baseline" in label and linestyle == "--":
         return True
     return False
 
@@ -600,13 +731,8 @@ def audit_figure_geometry(figure: Figure) -> None:
             )
 
 
-def _biology_zorder(segment: str, mode: FigureMode) -> int:
-    _ = (segment, mode)
-    return config.GEOMETRIC_LAYER_FOREGROUND.zorder
-
-
 def _biology_marker_style(mode: FigureMode) -> tuple[str, float]:
-    """Unified master: diamonds; biology panel: filled circles (same segment colors)."""
+    """Filled circles on unified master and biology panel."""
     if mode == "biology":
         return (
             config.GEOMETRIC_BIOLOGY_MARKER_BIOLOGY_PANEL,
@@ -624,7 +750,7 @@ def _plot_von_duin_biology_scatter(
     *,
     mode: FigureMode,
 ) -> None:
-    """van Duin (2024) Section-I ERD — diamonds on unified, circles on biology panel."""
+    """van Duin (2024) Section-I ERD — filled circles on unified and biology panels."""
     if biology_samples.empty:
         return
 
@@ -643,19 +769,17 @@ def _plot_von_duin_biology_scatter(
         y_arr = _rho_w_per_kg_from_frame(rows)
         legend_label = rf"{spec.label} — {VON_DUIN_LABEL_MARKER} ($n={len(rows)}$)"
         if config.GEOMETRIC_DECOUPLING_ENABLED:
-            # Biology panel: filled circles without marker edge outline.
-            biology_layer: GeometricLayer = "midground" if mode == "biology" else "foreground"
-            biology_alpha = 1.0 if mode == "biology" else None
             _scatter_geometric_layer(
                 axis,
                 x_arr,
                 y_arr,
-                layer=biology_layer,
+                layer="midground",
                 label=legend_label,
                 color=spec.color,
                 marker=biology_marker,
                 size=biology_size,
-                alpha=biology_alpha,
+                alpha=1.0,
+                zorder=config.BIOLOGY_SCATTER_ZORDER,
             )
         else:
             _scatter_series(
@@ -664,11 +788,19 @@ def _plot_von_duin_biology_scatter(
                 y_arr,
                 color=spec.color,
                 label=legend_label,
-                zorder=_biology_zorder(spec.label, mode),
+                zorder=config.BIOLOGY_SCATTER_ZORDER,
             )
 
 
-def _plot_yso_scatter(axis: Axes, yso_results: pd.DataFrame, *, show_errors: bool) -> None:
+def _plot_yso_scatter(
+    axis: Axes,
+    yso_results: pd.DataFrame,
+    *,
+    show_errors: bool,
+    marker_size: float | None = None,
+    marker_zorder: float | None = None,
+    use_rings: bool = False,
+) -> None:
     """Empirical YSO markers — background diffuse circle layer."""
     if yso_results.empty:
         return
@@ -699,14 +831,30 @@ def _plot_yso_scatter(axis: Axes, yso_results: pd.DataFrame, *, show_errors: boo
                 delicate=True,
             )
         else:
-            _scatter_geometric_layer(
-                axis,
-                x_arr,
-                y_arr,
-                layer="background",
-                label=label,
-                color=config.COLOR_YSO_CONTROL,
-            )
+            if use_rings:
+                _scatter_ring_geometric_layer(
+                    axis,
+                    x_arr,
+                    y_arr,
+                    layer="background",
+                    label=label,
+                    edgecolor=config.COLOR_YSO_CONTROL,
+                    size=marker_size,
+                    linewidth=config.YSO_UNIFIED_RING_LINEWIDTH,
+                    alpha=config.YSO_UNIFIED_RING_ALPHA,
+                    zorder=marker_zorder,
+                )
+            else:
+                _scatter_geometric_layer(
+                    axis,
+                    x_arr,
+                    y_arr,
+                    layer="background",
+                    label=label,
+                    color=config.COLOR_YSO_CONTROL,
+                    size=marker_size,
+                    zorder=marker_zorder,
+                )
         return
 
     color = config.COLOR_YSO_CONTROL
@@ -750,15 +898,8 @@ def _plot_yso_scatter(axis: Axes, yso_results: pd.DataFrame, *, show_errors: boo
 
 
 def _compact_category_alpha(category: str, mode: FigureMode) -> float | None:
-    """
-    WD marker opacity — match unified master on multi-cohort overlays.
-
-    unified master: translucent WDs (dense underlayer).
-    compact-only panel: full opacity (no overlap with other domains).
-    """
-    if mode == "compact":
-        return None
-    return config.COMPACT_CATEGORY_ALPHA.get(category)
+    del category, mode
+    return None
 
 
 def _plot_compact_scatter(
@@ -778,6 +919,20 @@ def _plot_compact_scatter(
     for category in config.COMPACT_OBJECT_CATEGORIES:
         rows = display[display["category"] == category]
         if rows.empty:
+            continue
+
+        if category == config.CATEGORY_CATACLYSMIC_VARIABLES:
+            category_alpha = _compact_category_alpha(category, mode)
+            for subgroup, color, legend_label in _wd_dubus_plot_groups(rows):
+                _plot_wd_rows(
+                    axis,
+                    subgroup,
+                    color=color,
+                    legend_label=legend_label,
+                    show_errors=show_errors,
+                    mode=mode,
+                    category_alpha=category_alpha,
+                )
             continue
 
         x_mass = _mass_kg_from_frame(rows)
@@ -878,32 +1033,38 @@ def _plot_wd_dubus_uncertainties(
     if rows.empty:
         return
 
+    for subgroup, color, legend_label in _wd_dubus_plot_groups(rows):
+        _plot_wd_rows(
+            axis,
+            subgroup,
+            color=color,
+            legend_label=legend_label,
+            show_errors=True,
+            mode="wd_uncertainties",
+            category_alpha=1.0,
+        )
+
+
+def _plot_smbh_scatter(axis: Axes, smbH_results: pd.DataFrame) -> None:
+    """Seyfert 1 SMBH test panel — Vidal (2020) Table 5 (Meyer-Hofmeister & Meyer 2011)."""
+    rows = smbH_results[smbH_results["track"] == "gravitational"].copy()
+    if rows.empty:
+        return
+
     x_arr = _mass_kg_from_frame(rows)
     y_arr = _rho_w_per_kg_from_frame(rows)
     legend_label = (
-        rf"Cataclysmic Variables (White Dwarfs) — Dubus et al. (2018) "
+        rf"{config.CATEGORY_DISPLAY_NAMES[config.CATEGORY_SUPERMASSIVE_BLACK_HOLES]} "
         rf"($n={len(rows)}$)"
     )
-    _errorbar_geometric_layer(
+    _scatter_geometric_layer(
         axis,
         x_arr,
         y_arr,
         layer="midground",
         label=legend_label,
-        color=config.COLOR_WHITE_DWARFS,
-        alpha=1.0,
-        xerr_col=rows["mass_kg_err"] if "mass_kg_err" in rows.columns else None,
-        y_lo_col=(
-            rows["power_density_w_per_kg_lo"]
-            if "power_density_w_per_kg_lo" in rows.columns
-            else None
-        ),
-        y_hi_col=(
-            rows["power_density_w_per_kg_hi"]
-            if "power_density_w_per_kg_hi" in rows.columns
-            else None
-        ),
-        delicate=True,
+        color=config.COLOR_SUPERMASSIVE_BLACK_HOLES,
+        size=config.GEOMETRIC_OBSERVATIONAL_CIRCLE_SIZE,
     )
 
 
@@ -912,6 +1073,7 @@ def create_domain_figure(
     compact_results: pd.DataFrame,
     yso_results: pd.DataFrame,
     biology_samples: pd.DataFrame | None = None,
+    smbH_results: pd.DataFrame | None = None,
 ) -> Figure:
     """Build one ApJ-compliant figure for a specific domain or the unified master."""
     if biology_samples is None:
@@ -923,23 +1085,41 @@ def create_domain_figure(
     figure, axis = plt.subplots(figsize=figure_size)
     _configure_axes(axis, mass_limits, rho_limits)
     if mode in {"unified", "biology"}:
-        _add_chaisson_living_references(axis, mass_limits, rho_limits)
-    if mode != "wd_uncertainties":
+        _add_chaisson_reference_overlays(axis, mass_limits, rho_limits)
+    if mode == "smbh":
+        _add_chaisson_reference_overlays(axis, mass_limits, rho_limits)
+    if mode not in {"wd_uncertainties", "smbh"}:
         _add_van_duin_bound(axis, rho_limits)
 
     show_yso_errors = mode != "unified"
     # Compact scatter matches unified on overlay panels; error bars only on wd_uncertainties.
     show_compact_errors = False
 
-    # Geometric decoupling draw order: background → mid-ground → foreground
-    if mode in {"unified", "yso"}:
+    # Draw order on unified: solid compact (WD green) → YSO rings → biology
+    if mode == "unified":
+        _plot_compact_scatter(
+            axis, compact_results, show_errors=show_compact_errors, mode=mode
+        )
+        _plot_yso_scatter(
+            axis,
+            yso_results,
+            show_errors=False,
+            marker_size=config.YSO_UNIFIED_MARKER_SIZE,
+            marker_zorder=config.YSO_UNIFIED_MARKER_ZORDER,
+            use_rings=True,
+        )
+    elif mode == "yso":
         _plot_yso_scatter(axis, yso_results, show_errors=show_yso_errors)
-    if mode in {"unified", "compact"}:
+    if mode == "compact":
         _plot_compact_scatter(
             axis, compact_results, show_errors=show_compact_errors, mode=mode
         )
     if mode == "wd_uncertainties":
         _plot_wd_dubus_uncertainties(axis, compact_results)
+    if mode == "smbh":
+        if smbH_results is None or smbH_results.empty:
+            raise ValueError("SMBH figure requires processed SMBH results.")
+        _plot_smbh_scatter(axis, smbH_results)
     if mode in {"unified", "biology"}:
         _plot_von_duin_biology_scatter(axis, biology_samples, mode=mode)
 
@@ -1012,11 +1192,13 @@ def save_all_figures(
     compact_results: pd.DataFrame,
     yso_results: pd.DataFrame,
     biology_samples: pd.DataFrame | None = None,
+    smbH_results: pd.DataFrame | None = None,
 ) -> dict[str, Path]:
     """
-    Export five ApJ publication figures (vector PDF only).
+    Export ApJ publication figures (vector PDF only).
 
     Unified master: scatter only. Zoom panels: error bars only when datasets supply them.
+    SMBH panel is separate from the unified master continuum.
     """
     _clear_existing_figures()
 
@@ -1026,6 +1208,7 @@ def save_all_figures(
         ("yso", config.FIGURE_YSO_PDF),
         ("compact", config.FIGURE_COMPACT_OBJECTS_PDF),
         ("wd_uncertainties", config.FIGURE_WD_DUBUS_UNCERTAINTIES_PDF),
+        ("smbh", config.FIGURE_SMBH_PDF),
     ]
 
     saved: dict[str, Path] = {}
@@ -1035,6 +1218,7 @@ def save_all_figures(
             compact_results=compact_results,
             yso_results=yso_results,
             biology_samples=biology_samples,
+            smbH_results=smbH_results,
         )
         out_path = _save_figure_pdf(figure, pdf_path)
         saved[f"{mode}_pdf"] = out_path
@@ -1042,39 +1226,3 @@ def save_all_figures(
             saved["compact_objects_pdf"] = out_path
 
     return saved
-
-
-def save_unified_master_figure(
-    figure: Figure,
-    pdf_path: Path | None = None,
-) -> dict[str, Path]:
-    return {"pdf": _save_figure_pdf(figure, pdf_path or config.FIGURE_UNIFIED_MASTER_PDF)}
-
-
-# ---------------------------------------------------------------------------
-# Legacy aliases
-# ---------------------------------------------------------------------------
-
-
-def create_master_power_density_figure(
-    compact_results: pd.DataFrame,
-    yso_results: pd.DataFrame,
-    biological_baseline: dict[str, pd.DataFrame | dict[str, float]] | None = None,
-) -> Figure:
-    biology = (
-        biological_baseline["combined"]
-        if biological_baseline is not None
-        else generate_biological_scatter_samples()
-    )
-    return create_unified_master_figure(compact_results, yso_results, biology)
-
-
-def save_master_figure(
-    figure: Figure,
-    pdf_path: Path | None = None,
-) -> dict[str, Path]:
-    return save_unified_master_figure(figure, pdf_path=pdf_path)
-
-
-# Backward-compatible audit alias
-audit_figure_scatter_only = audit_figure_geometry

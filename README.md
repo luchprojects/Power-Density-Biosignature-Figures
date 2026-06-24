@@ -14,7 +14,7 @@ python main.py
 
 | Folder | Contents |
 |--------|----------|
-| `figures/` | Five PDF figures (main deliverables) |
+| `figures/` | Six PDF figures (main deliverables) |
 | `processed/` | Computed CSVs, provenance manifest, audit ledger |
 | `docs/` | PI Word guide + technical figure reference (Markdown) |
 | `data/` | Raw source tables only (do not edit unless updating sources) |
@@ -44,7 +44,7 @@ Power Density as a Biosignature/
 │
 ├── data/                ★ raw inputs
 │   ├── biology/         van Duin (2024) MOESM1 ERD table
-│   ├── compact/         WDs, NSs, BHs + Dubus uncertainty cache
+│   ├── compact/         WDs, NSs, BHs + Dubus uncertainty cache + SMBH Table 5 cache
 │   └── yso/             Manara (2022) PPVII compilation
 │
 ├── figures/             ★ generated PDFs
@@ -57,7 +57,7 @@ Power Density as a Biosignature/
 
 ---
 
-## Active figures (5)
+## Active figures (6)
 
 | PDF | Description |
 |-----|-------------|
@@ -66,6 +66,7 @@ Power Density as a Biosignature/
 | `figure_yso.pdf` | Young stellar objects only |
 | `figure_compact_objects.pdf` | WDs, NSs, BHs only |
 | `figure_wd_dubus_uncertainties.pdf` | WDs with Dubus (2018) error bars |
+| `figure_smbh_seyfert1.pdf` | Seyfert 1 SMBHs (Vidal Table 5 test panel) |
 
 See **`docs/FIGURES.md`** for equations, file paths, and code entry points.
 
@@ -81,14 +82,6 @@ Mass in **kg**; axis labels on all figures use SI W·kg⁻¹.
 
 ---
 
-## Removed from pipeline
-
-- `figure_energy_budget.pdf` — dropped (inconsistent compiled data)
-- `figure_lifespan_trajectories.pdf` — out of scope
-- `figure_observational.pdf` — redundant with unified master
-
----
-
 ## Data sources (raw)
 
 | Domain | File |
@@ -97,5 +90,10 @@ Mass in **kg**; axis labels on all figures use SI W·kg⁻¹.
 | YSO | `data/yso/manara_2022_ppvii.tsv` → builds `data/yso/mdots_forclement.dat` |
 | Compact | `data/compact/Power density data.csv` |
 | WD uncertainties | `data/compact/dubus_2018_wd_uncertainties.csv` |
+| SMBH (Table 5) | `data/compact/vidal_2020_table5_smbh_seyfert1.csv` |
 
 Every scatter point comes from these tables or published literature reference lines (Chaisson, van Duin) — nothing is hand-placed.
+
+**Default:** `python main.py` reads committed CSVs. To rebuild compact/YSO/SMBH inputs from the Vidal PDF or Manara TSV, use `python main.py --rebuild-data`.
+
+NS/BH Φ_m uses **tabulated ERD** from Vidal (2020) with Clem's g/kg correction (÷1000 on Tables 3–4). Processed CSV includes `phi_source=tabulated_erd` where Ṁ is reference-only.

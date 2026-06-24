@@ -1,17 +1,9 @@
 {
-  "generated_utc": "2026-06-24T17:03:56.064420+00:00",
+  "generated_utc": "2026-06-24T18:38:11.317601+00:00",
   "mass_unit": "kg",
   "power_density_unit": "W.kg-1",
   "van_duin_limit_w_per_kg": 100000.0,
-  "chaisson_living_envelope_w_per_kg": [
-    0.1,
-    10.0
-  ],
-  "chaisson_2001_benchmarks_w_per_kg": {
-    "sun": 0.00019250981910715273,
-    "human": 2.0,
-    "society": 50.0
-  },
+  "chaisson_2001_society_benchmark_w_per_kg": 50.0,
   "yso_mass_calibration": "somers_2020_spots",
   "yso_spot_coverage_fraction": 0.17,
   "yso_reference_filter": [
@@ -36,13 +28,16 @@
     "Prokaryotes": 47
   },
   "biology_source": "van Duin (2024) MOESM1 ERD Table Section I",
+  "smbh_count": 16,
+  "smbh_source": "Vidal (2020) Table 5 \u2014 Meyer-Hofmeister & Meyer (2011)",
   "figures": {
-    "unified_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_unified_master.pdf",
-    "biology_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_biology.pdf",
-    "yso_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_yso.pdf",
-    "compact_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_compact_objects.pdf",
-    "compact_objects_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_compact_objects.pdf",
-    "wd_uncertainties_pdf": "/Users/clemi/Documents/Repos2/Power-Density-as-a-Universal-Biosignature/Power-Density-as-a-Universal-Biosignature/figures/figure_wd_dubus_uncertainties.pdf"
+    "unified_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_unified_master.pdf",
+    "biology_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_biology.pdf",
+    "yso_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_yso.pdf",
+    "compact_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_compact_objects.pdf",
+    "compact_objects_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_compact_objects.pdf",
+    "wd_uncertainties_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_wd_dubus_uncertainties.pdf",
+    "smbh_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_smbh_seyfert1.pdf"
   },
   "empirical_colors": {
     "young_stellar_objects": {
@@ -60,19 +55,22 @@
     "transient_black_holes": {
       "hex": "#DC2626",
       "label": "Transient Black Holes"
+    },
+    "supermassive_black_holes": {
+      "hex": "#9333EA",
+      "label": "Seyfert 1 SMBHs (Meyer-Hofmeister & Meyer 2011)"
     }
   },
   "plot_protocol": {
     "empirical_geometry": "geometric_decoupling_scatter",
     "scatter_layers": {
-      "background": "YSO open rings (yellow edge, s=15, z=1)",
+      "background": "YSO open rings (yellow, z=2.4 on unified)",
       "midground": "Compact filled circles per category (s=40, z=2)",
-      "foreground": "Biology per segment \u2014 diamonds (unified), circles (biology panel)"
+      "biology": "Biology filled circles per segment (s=40, z=3)"
     },
     "marker_shape": "o",
     "allowed_continuous_lines": [
-      "chaisson_living_envelope",
-      "chaisson_2001_benchmarks",
+      "chaisson_2001_society_benchmark",
       "van_duin_stability_boundary"
     ],
     "axis_labels": {

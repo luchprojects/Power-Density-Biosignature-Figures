@@ -13,6 +13,7 @@ import pandas as pd
 import config
 
 TrackType = Literal["gravitational", "nuclear"]
+PhiSourceType = Literal["tabulated_erd", "computed_from_mdot"]
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class PowerDensityResult:
     power_density_w_per_kg: float
     power_density_w_per_g: float
     track: TrackType
+    phi_source: PhiSourceType
 
 
 def gravitational_efficiency(mass_kg: float, radius_m: float) -> float:
@@ -92,6 +94,11 @@ def stellar_black_hole_radius_meters(mass_msun: float) -> float:
     return solar_radius_to_m(config.DEFAULT_STELLAR_MASS_BLACK_HOLE_RADIUS_SOLAR * mass_msun)
 
 
+def schwarzschild_radius_meters(mass_msun: float) -> float:
+    mass_kg = solar_mass_to_kg(mass_msun)
+    return 2.0 * config.GRAVITATIONAL_CONSTANT * mass_kg / (config.SPEED_OF_LIGHT ** 2)
+
+
 def infer_default_radius_meters(category: str, mass_msun: float) -> float:
     if category == config.CATEGORY_CATACLYSMIC_VARIABLES:
         return white_dwarf_radius_meters(mass_msun)
@@ -99,6 +106,8 @@ def infer_default_radius_meters(category: str, mass_msun: float) -> float:
         return neutron_star_radius_meters()
     if category == config.CATEGORY_TRANSIENT_BLACK_HOLES:
         return stellar_black_hole_radius_meters(mass_msun)
+    if category == config.CATEGORY_SUPERMASSIVE_BLACK_HOLES:
+        return schwarzschild_radius_meters(mass_msun)
     raise ValueError(f"Unknown compact-object category: {category}")
 
 
@@ -148,6 +157,11 @@ def compute_compact_object_tracks(row: pd.Series) -> list[PowerDensityResult]:
             density_g = reported_w_g
             density_kg = reported_w_g * config.KG_TO_GRAM
             luminosity_grav = density_kg * mass_kg
+            phi_source: PhiSourceType = "tabulated_erd"
+            eta_value = float("nan")
+        else:
+            phi_source = "computed_from_mdot"
+            eta_value = eta_grav
         results.append(
             PowerDensityResult(
                 name=name,
@@ -156,11 +170,12 @@ def compute_compact_object_tracks(row: pd.Series) -> list[PowerDensityResult]:
                 mass_g=mass_g,
                 mdot_kg_s=mdot_kg_s,
                 radius_m=radius_m,
-                eta=eta_grav,
+                eta=eta_value,
                 luminosity_w=luminosity_grav,
                 power_density_w_per_kg=density_kg,
                 power_density_w_per_g=density_g,
                 track="gravitational",
+                phi_source=phi_source,
             )
         )
 
@@ -181,6 +196,7 @@ def compute_compact_object_tracks(row: pd.Series) -> list[PowerDensityResult]:
                     power_density_w_per_kg=density_nuclear,
                     power_density_w_per_g=w_per_kg_to_w_per_g(density_nuclear),
                     track="nuclear",
+                    phi_source="computed_from_mdot",
                 )
             )
     elif reported_w_g is not None:
@@ -198,6 +214,7 @@ def compute_compact_object_tracks(row: pd.Series) -> list[PowerDensityResult]:
                 power_density_w_per_kg=density_kg,
                 power_density_w_per_g=reported_w_g,
                 track="gravitational",
+                phi_source="tabulated_erd",
             )
         )
 
@@ -225,6 +242,7 @@ def compute_all_compact_results(dataframe: pd.DataFrame) -> pd.DataFrame:
                     "luminosity_w": result.luminosity_w,
                     "power_density_w_per_kg": result.power_density_w_per_kg,
                     "power_density_w_per_g": result.power_density_w_per_g,
+                    "phi_source": result.phi_source,
                 }
             )
     return pd.DataFrame.from_records(records)
@@ -241,9 +259,17 @@ def attach_dubus_wd_uncertainties(
     (consistent with the plotted point, which uses tabulated ERD when present).
     """
     result = compact_results.copy()
-    for column in ("mass_kg_err", "power_density_w_per_kg_lo", "power_density_w_per_kg_hi"):
+    for column in (
+        "mass_kg_err",
+        "power_density_w_per_kg_lo",
+        "power_density_w_per_kg_hi",
+        "dubus_table",
+    ):
         if column not in result.columns:
-            result[column] = np.nan
+            if column == "dubus_table":
+                result[column] = pd.Series([pd.NA] * len(result), dtype="string")
+            else:
+                result[column] = np.nan
 
     dubus_by_name = dubus_table.set_index("name")
     mask = (
@@ -272,6 +298,10 @@ def attach_dubus_wd_uncertainties(
 
         mdot_lo_g_s = dubus_row.get("mdot_g_s_lo")
         mdot_hi_g_s = dubus_row.get("mdot_g_s_hi")
+        dubus_table = dubus_row.get("dubus_table")
+        if pd.notna(dubus_table):
+            result.at[idx, "dubus_table"] = str(dubus_table)
+
         if pd.isna(mdot_lo_g_s) or pd.isna(mdot_hi_g_s) or mdot_kg_s <= 0:
             continue
 

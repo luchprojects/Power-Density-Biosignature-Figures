@@ -50,6 +50,11 @@ def parse_arguments() -> argparse.Namespace:
         help="YSO mdots_forclement.dat path",
     )
     parser.add_argument(
+        "--rebuild-data",
+        action="store_true",
+        help="Regenerate compact/YSO/SMBH CSVs from PDF/Manara sources instead of committed files",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable debug logging",
@@ -60,11 +65,13 @@ def parse_arguments() -> argparse.Namespace:
 def run_pipeline(
     compact_csv: Path | None = None,
     mdots_dat: Path | None = None,
+    *,
+    rebuild_data: bool = False,
 ) -> dict[str, Path]:
     logger = logging.getLogger(__name__)
 
-    logger.info("Assembling compact-object master table if needed...")
-    compact_raw = data_loader.load_compact_objects(compact_csv)
+    logger.info("Loading compact-object master table from committed CSV...")
+    compact_raw = data_loader.load_compact_objects(compact_csv, rebuild=rebuild_data)
     summary = data_loader.summarize_dataset(compact_raw)
     logger.info("Compact-object counts:\n%s", summary.to_string(index=False))
 
@@ -78,8 +85,15 @@ def run_pipeline(
     compact_results.to_csv(compact_export, index=False)
     logger.info("Exported %d compact track rows to %s", len(compact_results), compact_export)
 
+    logger.info("Loading Vidal (2020) Table 5 Seyfert 1 SMBHs...")
+    smbH_raw = data_loader.load_supermassive_black_holes(rebuild=rebuild_data)
+    smbH_results = physics_engine.compute_all_compact_results(smbH_raw)
+    smbH_export = config.PROCESSED_SMBH_CSV
+    smbH_results.to_csv(smbH_export, index=False)
+    logger.info("Exported %d SMBH track rows to %s", len(smbH_results), smbH_export)
+
     logger.info("Loading YSO control (Somers 2020 SPOTS masses; Alcalá+2017 / Manara+2017 filter)...")
-    yso_raw = data_loader.load_mdots_forclement(mdots_dat, rebuild=True)
+    yso_raw = data_loader.load_mdots_forclement(mdots_dat, rebuild=rebuild_data)
     yso_results = physics_engine.compute_yso_power_density(yso_raw)
     yso_export = config.PROCESSED_YSO_CSV
     yso_results.to_csv(yso_export, index=False)
@@ -99,17 +113,19 @@ def run_pipeline(
     ledger_path = provenance.write_tracking_ledger()
     logger.info("Tracking ledger -> %s", ledger_path)
 
-    logger.info("Rendering five ApJ/MNRAS publication figures (PDF)...")
+    logger.info("Rendering ApJ/MNRAS publication figures (PDF)...")
     saved = plotter.save_all_figures(
         compact_results=compact_results,
         yso_results=yso_results,
         biology_samples=biology_samples,
+        smbH_results=smbH_results,
     )
 
     manifest_path = provenance.write_provenance_manifest(
         compact_results=compact_results,
         yso_results=yso_results,
         biology_results=biology_samples,
+        smbH_results=smbH_results,
         saved_figures=saved,
     )
     logger.info("Provenance manifest -> %s", manifest_path)
@@ -126,6 +142,7 @@ def run_pipeline(
                 compact_results=compact_results,
                 yso_results=yso_results,
                 biology_results=biology_samples,
+                smbH_results=smbH_results,
             )
             logger.info("Figure reference document -> %s", doc_path)
     except ImportError:
@@ -147,6 +164,7 @@ def main() -> int:
         run_pipeline(
             compact_csv=args.compact_csv,
             mdots_dat=args.mdots_dat,
+            rebuild_data=args.rebuild_data,
         )
     except Exception as exc:
         logging.getLogger(__name__).error("Pipeline failed: %s", exc)

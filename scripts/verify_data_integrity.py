@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,8 +28,10 @@ def main() -> int:
     sources = [
         config.VON_DUIN_ERD_CSV,
         config.COMPACT_OBJECTS_CSV,
+        config.SMBH_OBJECTS_CSV,
         config.MANARA_MDOTS_DAT,
         config.DATA_COMPACT_DIR / "dubus_2018_wd_uncertainties.csv",
+        config.VIDAL_PDF,
     ]
     for path in sources:
         if path.exists():
@@ -40,6 +43,8 @@ def main() -> int:
     yso = pd.read_csv(config.PROCESSED_YSO_CSV)
     biology = pd.read_csv(config.PROCESSED_BIOLOGY_CSV)
 
+    smbH = pd.read_csv(config.PROCESSED_SMBH_CSV) if config.PROCESSED_SMBH_CSV.exists() else pd.DataFrame()
+
     grav = compact[compact["track"] == "gravitational"]
     ok(
         f"Compact scatter: {len(grav)} points "
@@ -47,6 +52,11 @@ def main() -> int:
         f"NS={len(grav[grav.category == 'neutron_stars'])}, "
         f"BH={len(grav[grav.category == 'transient_black_holes'])})"
     )
+    if not smbH.empty:
+        smbH_grav = smbH[smbH["track"] == "gravitational"]
+        ok(f"SMBH scatter: {len(smbH_grav)} points (Vidal 2020 Table 5)")
+    else:
+        warn("SMBH processed CSV missing — run main.py")
     ok(f"YSO scatter: {len(yso)} points")
     ok(f"Biology scatter: {len(biology)} points")
 
@@ -62,6 +72,31 @@ def main() -> int:
     wd = grav[grav["category"] == "cataclysmic_variables"]
     if "mass_kg_err" in wd.columns:
         ok(f"WD Dubus errors: {wd['mass_kg_err'].notna().sum()} systems (literature intervals)")
+    if "dubus_table" in wd.columns:
+        a2 = int((wd["dubus_table"] == "A2").sum())
+        a3 = int((wd["dubus_table"] == "A3").sum())
+        ok(f"WD Dubus subtypes: A.2 general CVs={a2}, A.3 nova-like={a3}")
+
+    if "phi_source" in grav.columns:
+        for cat, label in [
+            ("neutron_stars", "NS"),
+            ("transient_black_holes", "BH"),
+        ]:
+            sub = grav[grav["category"] == cat]
+            if sub.empty:
+                continue
+            tabulated = (sub["phi_source"] == "tabulated_erd").all()
+            eta_nan = sub["eta"].isna().all()
+            l_ok = np.allclose(
+                sub["luminosity_w"],
+                sub["power_density_w_per_kg"] * sub["mass_kg"],
+                rtol=1e-9,
+                equal_nan=True,
+            )
+            ok(
+                f"{label}: phi_source=tabulated_erd ({tabulated}), "
+                f"eta NaN ({eta_nan}), L=M*Phi_m ({l_ok})"
+            )
 
     yso_err_cols = [c for c in yso.columns if "err" in c.lower()]
     if yso_err_cols:

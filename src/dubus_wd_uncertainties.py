@@ -20,6 +20,9 @@ DUBUS_TABLE_URLS: tuple[str, ...] = (
     "https://www.aanda.org/articles/aa/full_html/2018/09/aa33372-18/T3.html",
 )
 DUBUS_UNCERTAINTIES_CSV = config.DATA_COMPACT_DIR / "dubus_2018_wd_uncertainties.csv"
+DUBUS_TABLE_A2 = "A2"
+DUBUS_TABLE_A3 = "A3"
+DUBUS_TABLE_KEYS: tuple[str, ...] = (DUBUS_TABLE_A2, DUBUS_TABLE_A3)
 
 _MINUS_CHARS = "\u2212\u2013\u2014-"
 
@@ -70,7 +73,8 @@ def _parse_mdot_interval_g_s(value: object) -> tuple[float | None, float | None]
 
 def _fetch_dubus_tables() -> pd.DataFrame:
     records: list[dict[str, object]] = []
-    for url in DUBUS_TABLE_URLS:
+    table_keys = (DUBUS_TABLE_A2, DUBUS_TABLE_A3)
+    for url, dubus_table in zip(DUBUS_TABLE_URLS, table_keys):
         table = pd.read_html(url)[0]
         object_col = table.columns[0]
         mass_col = ("M1", "M⊙") if ("M1", "M⊙") in table.columns else table.columns[2]
@@ -91,6 +95,7 @@ def _fetch_dubus_tables() -> pd.DataFrame:
                     "mass_msun_err": mass_msun_err,
                     "mdot_g_s_lo": mdot_lo,
                     "mdot_g_s_hi": mdot_hi,
+                    "dubus_table": dubus_table,
                     "source": "Dubus+2018_AA617_A26",
                 }
             )
@@ -115,10 +120,15 @@ def load_dubus_wd_uncertainties(
 ) -> pd.DataFrame:
     """Load Dubus (2018) WD uncertainty table, fetching from A&A if needed."""
     csv_path = path or DUBUS_UNCERTAINTIES_CSV
-    if rebuild or not csv_path.exists():
+    needs_rebuild = rebuild or not csv_path.exists()
+    if csv_path.exists() and not needs_rebuild:
+        header = pd.read_csv(csv_path, nrows=0).columns
+        if "dubus_table" not in header:
+            needs_rebuild = True
+    if needs_rebuild:
         build_dubus_uncertainties_csv(csv_path)
     frame = pd.read_csv(csv_path)
-    required = {"name", "mass_msun_err", "mdot_g_s_lo", "mdot_g_s_hi"}
+    required = {"name", "mass_msun_err", "mdot_g_s_lo", "mdot_g_s_hi", "dubus_table"}
     missing = required - set(frame.columns)
     if missing:
         raise ValueError(f"Dubus uncertainty CSV missing columns: {missing}")

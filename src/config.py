@@ -29,15 +29,13 @@ PROCESSED_DIR = PROJECT_ROOT / "processed"
 DOCS_DIR = PROJECT_ROOT / "docs"
 
 COMPACT_OBJECTS_CSV = DATA_COMPACT_DIR / "Power density data.csv"
+SMBH_OBJECTS_CSV = DATA_COMPACT_DIR / "vidal_2020_table5_smbh_seyfert1.csv"
 MANARA_MDOTS_DAT = DATA_YSO_DIR / "mdots_forclement.dat"
 MANARA_COMPILATION_TSV = DATA_YSO_DIR / "manara_2022_ppvii.tsv"
 LEGACY_WD_TABLE = DATA_COMPACT_DIR / "Power density data  - Table 1 accreting WDs.csv"
 VIDAL_PDF = REFERENCES_DIR / (
     "Vidal-2020-ERD as a technosignature - case for stellivores V1.5.pdf"
 )
-
-MASTER_FIGURE_PATH = FIGURES_DIR / "master_power_density.pdf"
-MASTER_FIGURE_PDF = FIGURES_DIR / "master_power_density.pdf"
 
 # ---------------------------------------------------------------------------
 # Fundamental physical constants (SI)
@@ -71,52 +69,23 @@ WHITE_DWARF_RADIUS_MASS_EXPONENT = -1.0 / 3.0
 
 # ---------------------------------------------------------------------------
 # Literature reference overlays — one solid color per reference (all figures)
-# Distinct from empirical scatter (YSO/WD/NS/BH) and Kempes scaling tracks.
 # ---------------------------------------------------------------------------
 
 REFERENCE_LINE_STYLE = "-"
 REFERENCE_LINE_WIDTH = 1.15
 REFERENCE_LINE_ALPHA = 0.92
 
-COLOR_REF_CHAISSON_ENVELOPE = "#0f766e"   # teal — plants & animals band (Chaisson 2003; 2011)
-COLOR_REF_CHAISSON_SUN = "#78716c"        # stone — Sun benchmark (Chaisson 2001, p. 139)
-COLOR_REF_CHAISSON_HUMAN = "#db2777"      # pink — human benchmark (Chaisson 2001, p. 139)
 COLOR_REF_CHAISSON_SOCIETY = "#b45309"    # amber — modern society (Chaisson 2001, p. 139)
 COLOR_REF_VAN_DUIN = "#4f46e5"            # indigo — dissipative ceiling (van Duin 2024)
 
-CHAISSON_LIVING_ENVELOPE_MIN_W_PER_KG = 0.1
-CHAISSON_LIVING_ENVELOPE_MAX_W_PER_KG = 10.0
-
-# Benchmark ladder — Chaisson (2001, Cosmic Evolution, p. 139; cited in Vidal preprint)
-CHAISSON_SUN_MASS_KG = SOLAR_MASS
-CHAISSON_SUN_POWER_DENSITY_W_PER_KG = SOLAR_LUMINOSITY / SOLAR_MASS  # ~1.93e-4; Chaisson quotes ~2e-4
-CHAISSON_HUMAN_MASS_KG = 70.0
-CHAISSON_2001_HUMAN_W_PER_KG = 2.0
+# Chaisson (2001, Cosmic Evolution, p. 139) — modern society benchmark only
 CHAISSON_2001_SOCIETY_W_PER_KG = 50.0
 
-CHAISSON_ENVELOPE_FILL_ALPHA = 0.10
-CHAISSON_BENCHMARK_MARKER_SIZE = 5.0
-
-CHAISSON_ENVELOPE_LEGEND_LABEL = r"Living envelope — plants \& animals (Chaisson 2003; 2011)"
-CHAISSON_SUN_BENCHMARK_LABEL = r"Sun benchmark (Chaisson 2001, p.~139)"
-CHAISSON_HUMAN_BENCHMARK_LABEL = r"Human benchmark (Chaisson 2001, p.~139)"
 CHAISSON_SOCIETY_BENCHMARK_LABEL = r"Modern society (Chaisson 2001, p.~139)"
 
 # Canonical SI display units — all publication figures use kg and W.kg-1 for Φ_m
 MASS_UNIT = "kg"
 POWER_DENSITY_UNIT = "W.kg-1"
-
-REFERENCE_OVERLAY_REGISTRY: tuple[tuple[str, str, str], ...] = (
-    (
-        "Chaisson living envelope",
-        COLOR_REF_CHAISSON_ENVELOPE,
-        f"{CHAISSON_LIVING_ENVELOPE_MIN_W_PER_KG:g}–{CHAISSON_LIVING_ENVELOPE_MAX_W_PER_KG:g} {POWER_DENSITY_UNIT}",
-    ),
-    ("Chaisson Sun benchmark", COLOR_REF_CHAISSON_SUN, "Chaisson 2001, p. 139"),
-    ("Chaisson Human benchmark", COLOR_REF_CHAISSON_HUMAN, "Chaisson 2001, p. 139"),
-    ("Chaisson Modern society", COLOR_REF_CHAISSON_SOCIETY, "Chaisson 2001, p. 139"),
-    ("van Duin stability limit", COLOR_REF_VAN_DUIN, f"10⁵ {POWER_DENSITY_UNIT}"),
-)
 
 # ---------------------------------------------------------------------------
 # Dataset categories
@@ -138,6 +107,9 @@ CATEGORY_DISPLAY_NAMES: dict[str, str] = {
     CATEGORY_CATACLYSMIC_VARIABLES: "Cataclysmic Variables (White Dwarfs)",
     CATEGORY_NEUTRON_STARS: "Neutron Stars",
     CATEGORY_TRANSIENT_BLACK_HOLES: "Transient Black Holes",
+    CATEGORY_SUPERMASSIVE_BLACK_HOLES: (
+        r"Seyfert 1 SMBHs — Meyer-Hofmeister & Meyer (2011)"
+    ),
 }
 
 # Universal empirical marker policy — solid filled circles
@@ -153,12 +125,6 @@ EMPIRICAL_MARKER_ALPHA = 0.85
 # Dense clouds (738 multicellular, 130 WDs on unified) — translucent underlayers
 EMPIRICAL_MARKER_ALPHA_DENSE = 0.22
 PLOT_MARKER_SHAPE = EMPIRICAL_MARKER_SHAPE
-
-COMPACT_CATEGORY_MARKERS: dict[str, str] = {
-    CATEGORY_CATACLYSMIC_VARIABLES: PLOT_MARKER_SHAPE,
-    CATEGORY_NEUTRON_STARS: PLOT_MARKER_SHAPE,
-    CATEGORY_TRANSIENT_BLACK_HOLES: PLOT_MARKER_SHAPE,
-}
 
 # ---------------------------------------------------------------------------
 # YSO control (Manara+2022; PI-preferred 2017 baseline references)
@@ -200,27 +166,28 @@ PLOT_AXIS_LABEL_SIZE = 12
 PLOT_TITLE_SIZE = 12
 PLOT_LEGEND_SIZE = 9
 PLOT_MARKER_SIZE = EMPIRICAL_MARKER_SIZE
-PLOT_MARKER_SIZE_BIOLOGY = EMPIRICAL_MARKER_SIZE
-PLOT_MARKER_SIZE_YSO = EMPIRICAL_MARKER_SIZE
-PLOT_MARKER_SIZE_COMPACT = EMPIRICAL_MARKER_SIZE
-PLOT_MARKER_ALPHA_BIOLOGY = EMPIRICAL_MARKER_ALPHA
-PLOT_MARKER_ALPHA_YSO = EMPIRICAL_MARKER_ALPHA
-PLOT_MARKER_ALPHA_COMPACT = EMPIRICAL_MARKER_ALPHA
-PLOT_MARKER_ALPHA_BIOLOGY_MULTICELLULAR = 0.45
-PLOT_MARKER_ALPHA_WHITE_DWARFS = 0.12  # n=130 CV/WD cohort — dense overlay
 
 # ---------------------------------------------------------------------------
 # Geometric decoupling — three-layer scatter architecture (no alpha-blend masking)
-# Background: filled YSO circles | Mid-ground: filled compact circles | Foreground: biology diamonds
+# Background: filled YSO | Mid-ground: compact (open WD circles on unified, filled on compact panel)
 # YSO and compact share GEOMETRIC_OBSERVATIONAL_CIRCLE_SIZE (filled dots, same s)
 # ---------------------------------------------------------------------------
 
 GEOMETRIC_DECOUPLING_ENABLED = True
 
-GeometricLayerName = str  # "background" | "midground" | "foreground"
+GeometricLayerName = str  # "background" | "midground"
 
 # Shared filled-circle size for YSO + compact observational cohorts
 GEOMETRIC_OBSERVATIONAL_CIRCLE_SIZE = 40.0
+
+# Unified master — YSO open rings on top; open WD circles underneath (dense CV cohort).
+YSO_UNIFIED_MARKER_SIZE = 38.0
+YSO_UNIFIED_RING_LINEWIDTH = 0.65
+YSO_UNIFIED_RING_ALPHA = 0.9
+YSO_UNIFIED_MARKER_ZORDER = 2.4
+
+COMPACT_WD_UNIFIED_MARKER_SIZE = YSO_UNIFIED_MARKER_SIZE
+BIOLOGY_SCATTER_ZORDER = 3
 
 
 @dataclass(frozen=True)
@@ -252,26 +219,16 @@ GEOMETRIC_LAYER_MIDGROUND = GeometricLayerSpec(
     edgecolor="none",
     linewidth=0.0,
 )
-GEOMETRIC_LAYER_FOREGROUND = GeometricLayerSpec(
-    marker="D",
-    size=50.0,
-    zorder=3,
-    alpha=1.0,
-    facecolor=None,
-    edgecolor="#666666",
-    linewidth=0.5,
-)
 
-# Biology marker by figure mode — diamonds on unified (cross-domain), circles on biology panel
-GEOMETRIC_BIOLOGY_MARKER_UNIFIED = "D"
+# Biology — filled circles on all figures (unified + biology panel)
+GEOMETRIC_BIOLOGY_MARKER_UNIFIED = "o"
 GEOMETRIC_BIOLOGY_MARKER_BIOLOGY_PANEL = "o"
-GEOMETRIC_BIOLOGY_SIZE_UNIFIED = GEOMETRIC_LAYER_FOREGROUND.size
+GEOMETRIC_BIOLOGY_SIZE_UNIFIED = GEOMETRIC_OBSERVATIONAL_CIRCLE_SIZE
 GEOMETRIC_BIOLOGY_SIZE_BIOLOGY_PANEL = GEOMETRIC_OBSERVATIONAL_CIRCLE_SIZE
 
 GEOMETRIC_LAYERS: dict[str, GeometricLayerSpec] = {
     "background": GEOMETRIC_LAYER_BACKGROUND,
     "midground": GEOMETRIC_LAYER_MIDGROUND,
-    "foreground": GEOMETRIC_LAYER_FOREGROUND,
 }
 # Optional error-bar styling when datasets provide explicit uncertainty columns
 ERRORBAR_ECOLOR = "#94a3b8"
@@ -301,9 +258,17 @@ LEGEND_LOC_LOWER_RIGHT = "lower right"
 LEGEND_LAYOUT: dict[str, dict[str, object]] = {
     "unified": {"loc": LEGEND_LOC_UPPER_RIGHT},
     "biology": {"loc": LEGEND_LOC_LOWER_LEFT},
-    "yso": {"loc": LEGEND_LOC_UPPER_RIGHT},
+    "yso": {
+        "loc": LEGEND_LOC_UPPER_RIGHT,
+        "fontsize": 8,
+        "labelspacing": 0.2,
+        "borderaxespad": 0.35,
+        "handletextpad": 0.3,
+        "handlelength": 1.5,
+    },
     "compact": {"loc": LEGEND_LOC_UPPER_RIGHT},
     "wd_uncertainties": {"loc": LEGEND_LOC_UPPER_RIGHT},
+    "smbh": {"loc": LEGEND_LOC_UPPER_RIGHT},
 }
 PLOT_GRID_COLOR = "#cbd5e1"
 PLOT_GRID_ALPHA_MAJOR = 0.30
@@ -311,7 +276,7 @@ PLOT_GRID_ALPHA_MINOR = 0.15
 
 MASTER_MASS_MIN_KG = 1.0e-25
 MASTER_MASS_MAX_KG = 1.0e47
-MASTER_RHO_MIN_WKG = 1.0e-5
+MASTER_RHO_MIN_WKG = 1.0e-9  # YSO accretion extends to ~2e-8 W·kg⁻¹ (Manara 2022)
 MASTER_RHO_MAX_WKG = 1.0e11
 # Legacy gram-axis aliases (processed tables still store mass_g / W g^-1)
 MASTER_MASS_MIN_G = MASTER_MASS_MIN_KG * KG_TO_GRAM
@@ -326,9 +291,11 @@ FIGURE_YSO_PDF = FIGURES_DIR / "figure_yso.pdf"
 FIGURE_COMPACT_OBJECTS_PDF = FIGURES_DIR / "figure_compact_objects.pdf"
 FIGURE_COMPACT_PDF = FIGURE_COMPACT_OBJECTS_PDF  # backward-compatible alias
 FIGURE_WD_DUBUS_UNCERTAINTIES_PDF = FIGURES_DIR / "figure_wd_dubus_uncertainties.pdf"
+FIGURE_SMBH_PDF = FIGURES_DIR / "figure_smbh_seyfert1.pdf"
 FIGURE_REFERENCE_DOC = DOCS_DIR / "Figure_Dataset_Reference_Analysis.docx"
 
 PROCESSED_COMPACT_CSV = PROCESSED_DIR / "processed_compact_results.csv"
+PROCESSED_SMBH_CSV = PROCESSED_DIR / "processed_smbh_results.csv"
 PROCESSED_YSO_CSV = PROCESSED_DIR / "processed_yso_results.csv"
 VON_DUIN_ERD_CSV = DATA_BIOLOGY_DIR / "von_duin_2024_erd_moesm1.csv"
 PROCESSED_BIOLOGY_CSV = PROCESSED_DIR / "processed_von_duin_biology.csv"
@@ -340,45 +307,59 @@ AXIS_LABEL_MASS = rf"Mass $[\mathrm{{{MASS_UNIT}}}]$"
 AXIS_LABEL_POWER_DENSITY = r"Power Density $\Phi_m$ ($\mathrm{W \cdot kg^{-1}}$)"
 VAN_DUIN_LEGEND_LABEL = r"Stability Boundary (van Duin 2024)"
 
-# Kempes (2017) analytical scaling-law line styling
-BIOLOGY_ANALYTICAL_LINEWIDTH = 1.5
-BIOLOGY_ANALYTICAL_SAMPLE_COUNT = 500
-
 MASTER_FIGURE_PATH = FIGURE_UNIFIED_MASTER_PDF
 MASTER_FIGURE_PDF = FIGURE_UNIFIED_MASTER_PDF
 
 # Zoomed axes for standalone domain figures (global axes reserved for unified master)
 DOMAIN_BIOLOGY_MASS = (1.0e-23, 1.0e33)
-DOMAIN_BIOLOGY_RHO = (1.0e-12, 3.0e5)  # headroom above van Duin at 10^5 W.kg-1
+DOMAIN_BIOLOGY_RHO = (1.0e-12, 1.0e6)  # headroom above van Duin + mantis-shrimp burst outlier (~7e5)
 DOMAIN_YSO_MASS = (1.0e27, 1.0e32)
-DOMAIN_YSO_RHO = (1.0e-5, 1.0e-1)
+DOMAIN_YSO_RHO = (1.0e-8, 1.0e-3)  # full Manara sample (~2e-8–7e-4 W·kg⁻¹)
 DOMAIN_COMPACT_MASS = (1.0e28, 1.0e32)
-DOMAIN_COMPACT_RHO = (1.0e-6, 1.0e11)
+DOMAIN_COMPACT_RHO = (1.0e-8, 1.0e4)  # WD Dubus error bars extend to ~3e-7 W·kg⁻¹
+DOMAIN_SMBH_MASS = (1.0e34, 1.0e39)
+DOMAIN_SMBH_RHO = (1.0e1, 1.0e4)
 
 # ApJ defense-grade colorblind-safe empirical palette
 # Empirical scatter — standard distinct colors (identical across all figures & reference tables)
 COLOR_YSO_CONTROL = "#FBBF24"         # yellow — Young Stellar Objects (Manara 2022)
-COLOR_WHITE_DWARFS = "#22C55E"        # green — Cataclysmic Variables (accreting WDs)
+COLOR_WHITE_DWARFS = "#22C55E"        # green — general CVs (Dubus Table A.2)
+COLOR_WD_NOVA_LIKE = "#D946EF"        # fuchsia — nova-like CVs (Dubus Table A.3); distinct from A.2 green
 COLOR_NEUTRON_STARS = "#2563EB"       # blue — Neutron Stars
 COLOR_BLACK_HOLES = "#DC2626"         # red — Transient Black Holes
+COLOR_SUPERMASSIVE_BLACK_HOLES = "#9333EA"  # violet — Seyfert 1 SMBHs (Vidal Table 5)
 
-# Kempes (2017) analytical scaling-law line colors (continuous tracks, not scatter)
-COLOR_PROKARYOTES = "#A855F7"         # purple
-COLOR_EUKARYOTES = "#EA580C"          # orange
-COLOR_MULTICELLULAR = "#0891B2"       # cyan
+# Biology segment scatter colors (van Duin 2024 MOESM1 — green / brown / blue earth tones)
+COLOR_PROKARYOTES = "#946B3A"         # earth brown — prokaryotes (van Duin 2024)
+COLOR_EUKARYOTES = "#527A96"          # slate blue — eukaryotes
+COLOR_MULTICELLULAR = "#588B5C"       # forest green — multicellular (dominant cloud)
 
 EMPIRICAL_COLOR_REGISTRY: dict[str, tuple[str, str]] = {
     "young_stellar_objects": (COLOR_YSO_CONTROL, "Young Stellar Objects (Manara et al. 2022)"),
     "cataclysmic_variables": (COLOR_WHITE_DWARFS, "Cataclysmic Variables (White Dwarfs)"),
     "neutron_stars": (COLOR_NEUTRON_STARS, "Neutron Stars"),
     "transient_black_holes": (COLOR_BLACK_HOLES, "Transient Black Holes"),
+    "supermassive_black_holes": (
+        COLOR_SUPERMASSIVE_BLACK_HOLES,
+        "Seyfert 1 SMBHs (Meyer-Hofmeister & Meyer 2011)",
+    ),
 }
 
 COMPACT_CATEGORY_COLORS: dict[str, str] = {
     CATEGORY_CATACLYSMIC_VARIABLES: COLOR_WHITE_DWARFS,
     CATEGORY_NEUTRON_STARS: COLOR_NEUTRON_STARS,
     CATEGORY_TRANSIENT_BLACK_HOLES: COLOR_BLACK_HOLES,
+    CATEGORY_SUPERMASSIVE_BLACK_HOLES: COLOR_SUPERMASSIVE_BLACK_HOLES,
 }
-COMPACT_CATEGORY_ALPHA: dict[str, float] = {
-    CATEGORY_CATACLYSMIC_VARIABLES: PLOT_MARKER_ALPHA_WHITE_DWARFS,
+
+DUBUS_WD_SUBTYPE_COLORS: dict[str, str] = {
+    "A2": COLOR_WHITE_DWARFS,
+    "A3": COLOR_WD_NOVA_LIKE,
+}
+
+DUBUS_TABLE_KEYS: tuple[str, ...] = ("A2", "A3")
+
+DUBUS_WD_SUBTYPE_LABELS: dict[str, str] = {
+    "A2": "Cataclysmic Variables — Dubus et al. (2018) Table A.2",
+    "A3": "Nova-like CVs — Dubus et al. (2018) Table A.3",
 }

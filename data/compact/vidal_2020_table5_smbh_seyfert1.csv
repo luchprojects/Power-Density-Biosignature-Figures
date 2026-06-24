@@ -1,0 +1,17 @@
+name,mass_msun,mdot_msun_yr,erd_erg_s_g,category
+3C 120,55000000.0,0.367,19000000.0,supermassive_black_holes
+NGC 3516,42700000.0,0.006,400000.0,supermassive_black_holes
+NGC 3783,29500000.0,0.023,2220000.0,supermassive_black_holes
+NGC 4051,1910000.0,0.001,1490000.0,supermassive_black_holes
+NGC 4151,13200000.0,0.002,432000.0,supermassive_black_holes
+Mrk 766,3470000.0,0.021,17200000.0,supermassive_black_holes
+MCG-6-30-15,1550000.0,0.012,22000000.0,supermassive_black_holes
+Mrk 590,47900000.0,0.011,654000.0,supermassive_black_holes
+Mrk 110,25100000.0,0.238,26900000.0,supermassive_black_holes
+NGC 4395,363000.0,4e-05,313000.0,supermassive_black_holes
+NGC 5506,87100000.0,0.017,555000.0,supermassive_black_holes
+NGC 5548,67600000.0,0.035,1470000.0,supermassive_black_holes
+Mrk 509,145000000.0,0.301,5920000.0,supermassive_black_holes
+Ark 564,7940000.0,0.028,10000000.0,supermassive_black_holes
+NGC 7469,12300000.0,0.099,22900000.0,supermassive_black_holes
+Ark 120,186000000.0,0.18,2750000.0,supermassive_black_holes

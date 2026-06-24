@@ -23,10 +23,8 @@ FIGURE_TRACKING_ROWS: tuple[dict[str, str], ...] = (
             "unicellular eukaryote, and multicellular segments"
         ),
         "plot_rule": (
-            "Empirical scatter only; Chaisson (2003/2011) living envelope "
-            f"({config.CHAISSON_LIVING_ENVELOPE_MIN_W_PER_KG:g}–"
-            f"{config.CHAISSON_LIVING_ENVELOPE_MAX_W_PER_KG:g} {config.POWER_DENSITY_UNIT}); "
-            "Chaisson (2001) benchmarks; van Duin stability boundary"
+            "Empirical scatter only; Chaisson (2001) modern society benchmark; "
+            "van Duin stability boundary"
         ),
         "task_owner": "LK",
         "status": "automated",
@@ -75,14 +73,31 @@ FIGURE_TRACKING_ROWS: tuple[dict[str, str], ...] = (
         "data_source": "Integrated multi-scale continuum",
         "physics_validation": (
             f"van Duin (2024) stability boundary at 10^5 {config.POWER_DENSITY_UNIT}; "
-            "Chaisson living envelope and 2001 benchmarks as literature overlays"
+            "Chaisson modern society (2001) benchmark as literature overlay"
         ),
         "plot_rule": (
-            "Geometric decoupling scatter: YSO filled circles (z=1), compact filled circles "
-            "per category (z=2), biology per segment (z=3) — diamonds on unified, circles on "
-            "biology panel; Chaisson envelope/benchmarks; van Duin solid upper reference"
+            "Geometric decoupling scatter: YSO open rings (yellow, z=2.4), compact filled circles "
+            "per category (z=2), biology filled circles per segment (z=3); Chaisson society "
+            "benchmark; van Duin solid upper reference"
         ),
         "task_owner": "CV & LK",
+        "status": "automated",
+    },
+    {
+        "figure_asset": "figure_smbh_seyfert1.pdf",
+        "data_source": (
+            "Vidal (2020) Table 5 — 16 Seyfert 1 SMBHs (Meyer-Hofmeister & Meyer 2011); "
+            "parsed from references/Vidal-2020 PDF"
+        ),
+        "physics_validation": (
+            "Tabulated ERD (erg s^-1 g^-1) with eta=0.1 accretion efficiency per Vidal; "
+            "Schwarzschild radius for gravitational track"
+        ),
+        "plot_rule": (
+            "Separate test panel — not on unified master; scatter only; "
+            "Chaisson modern society benchmark"
+        ),
+        "task_owner": "LK",
         "status": "automated",
     },
 )
@@ -101,6 +116,7 @@ def write_provenance_manifest(
     compact_results: pd.DataFrame,
     yso_results: pd.DataFrame,
     biology_results: pd.DataFrame | None = None,
+    smbH_results: pd.DataFrame | None = None,
     saved_figures: dict[str, Path],
     output_path: Path | None = None,
 ) -> Path:
@@ -131,15 +147,7 @@ def write_provenance_manifest(
         "power_density_unit": config.POWER_DENSITY_UNIT,
         "mass_unit": config.MASS_UNIT,
         "van_duin_limit_w_per_kg": config.VAN_DUIN_DISSIPATIVE_LIMIT_W_PER_KG,
-        "chaisson_living_envelope_w_per_kg": [
-            config.CHAISSON_LIVING_ENVELOPE_MIN_W_PER_KG,
-            config.CHAISSON_LIVING_ENVELOPE_MAX_W_PER_KG,
-        ],
-        "chaisson_2001_benchmarks_w_per_kg": {
-            "sun": config.CHAISSON_SUN_POWER_DENSITY_W_PER_KG,
-            "human": config.CHAISSON_2001_HUMAN_W_PER_KG,
-            "society": config.CHAISSON_2001_SOCIETY_W_PER_KG,
-        },
+        "chaisson_2001_society_benchmark_w_per_kg": config.CHAISSON_2001_SOCIETY_W_PER_KG,
         "yso_mass_calibration": "somers_2020_spots",
         "yso_spot_coverage_fraction": config.YSO_CONTROL.spot_coverage_fraction,
         "yso_reference_filter": list(config.YSO_PREFERRED_REFERENCE_MARKERS),
@@ -150,6 +158,8 @@ def write_provenance_manifest(
         "biology_count": int(len(biology_results)) if biology_results is not None else 0,
         "biology_by_segment": biology_by_segment,
         "biology_source": "van Duin (2024) MOESM1 ERD Table Section I",
+        "smbh_count": int(len(smbH_results)) if smbH_results is not None else 0,
+        "smbh_source": "Vidal (2020) Table 5 — Meyer-Hofmeister & Meyer (2011)",
         "figures": {key: str(path) for key, path in saved_figures.items()},
         "empirical_colors": {
             key: {"hex": hex_code, "label": label}
@@ -158,14 +168,13 @@ def write_provenance_manifest(
         "plot_protocol": {
             "empirical_geometry": "geometric_decoupling_scatter",
             "scatter_layers": {
-                "background": "YSO open rings (yellow edge, s=15, z=1)",
+                "background": "YSO open rings (yellow, z=2.4 on unified)",
                 "midground": "Compact filled circles per category (s=40, z=2)",
-                "foreground": "Biology per segment — diamonds (unified), circles (biology panel)",
+                "biology": "Biology filled circles per segment (s=40, z=3)",
             },
             "marker_shape": config.PLOT_MARKER_SHAPE,
             "allowed_continuous_lines": [
-                "chaisson_living_envelope",
-                "chaisson_2001_benchmarks",
+                "chaisson_2001_society_benchmark",
                 "van_duin_stability_boundary",
             ],
             "axis_labels": {
