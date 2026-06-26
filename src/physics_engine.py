@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 import config
+from si_columns import PROCESSED_COMPACT_SI_COLUMNS, PROCESSED_YSO_SI_COLUMNS, select_si_columns
 
 TrackType = Literal["gravitational", "nuclear"]
 PhiSourceType = Literal["tabulated_erd", "computed_from_mdot"]
@@ -21,13 +22,11 @@ class PowerDensityResult:
     name: str
     category: str
     mass_kg: float
-    mass_g: float
     mdot_kg_s: float
     radius_m: float
     eta: float
     luminosity_w: float
     power_density_w_per_kg: float
-    power_density_w_per_g: float
     track: TrackType
     phi_source: PhiSourceType
 
@@ -50,20 +49,21 @@ def power_density_from_luminosity(luminosity_w: float, mass_kg: float) -> float:
     return luminosity_w / mass_kg
 
 
-def w_per_kg_to_w_per_g(value_w_per_kg: float) -> float:
-    return value_w_per_kg / config.KG_TO_GRAM
-
-
-def erg_per_s_per_g_to_w_per_g(value_erg_s_g: float) -> float:
-    return value_erg_s_g * config.ERG_TO_JOULE
+def erg_per_s_per_g_to_w_per_kg(value_erg_s_g: float) -> float:
+    """Convert literature ERD (erg s^-1 g^-1) to SI power density (W kg^-1)."""
+    return value_erg_s_g * config.ERG_TO_JOULE * config.KG_TO_GRAM
 
 
 def solar_mass_to_kg(mass_msun: float) -> float:
     return mass_msun * config.SOLAR_MASS
 
 
-def kg_to_grams(mass_kg: float) -> float:
-    return mass_kg * config.KG_TO_GRAM
+def reported_power_density_w_per_kg(row: pd.Series) -> float | None:
+    if pd.notna(row.get("erd_erg_s_g")):
+        return erg_per_s_per_g_to_w_per_kg(float(row["erd_erg_s_g"]))
+    if pd.notna(row.get("power_density_reported_wkg")):
+        return float(row["power_density_reported_wkg"])
+    return None
 
 
 def msun_per_year_to_kg_per_s(mdot_msun_yr: float) -> float:
@@ -121,22 +121,13 @@ def resolve_accretion_rate_kg_s(row: pd.Series) -> float | None:
     return None
 
 
-def reported_power_density_w_per_g(row: pd.Series) -> float | None:
-    if pd.notna(row.get("erd_erg_s_g")):
-        return erg_per_s_per_g_to_w_per_g(float(row["erd_erg_s_g"]))
-    if pd.notna(row.get("power_density_reported_wkg")):
-        return w_per_kg_to_w_per_g(float(row["power_density_reported_wkg"]))
-    return None
-
-
 def compute_compact_object_tracks(row: pd.Series) -> list[PowerDensityResult]:
     category = str(row["category"])
     name = str(row["name"])
     mass_msun = float(row["mass_msun"])
     mass_kg = solar_mass_to_kg(mass_msun)
-    mass_g = kg_to_grams(mass_kg)
 
-    reported_w_g = reported_power_density_w_per_g(row)
+    reported_w_kg = reported_power_density_w_per_kg(row)
     mdot_kg_s = resolve_accretion_rate_kg_s(row)
 
     if pd.notna(row.get("radius_m")):
@@ -149,31 +140,33 @@ def compute_compact_object_tracks(row: pd.Series) -> list[PowerDensityResult]:
     results: list[PowerDensityResult] = []
 
     if mdot_kg_s is not None:
-        eta_grav = gravitational_efficiency(mass_kg, radius_m)
-        luminosity_grav = accretion_luminosity_watts(mdot_kg_s, eta_grav)
-        density_kg = power_density_from_luminosity(luminosity_grav, mass_kg)
-        density_g = w_per_kg_to_w_per_g(density_kg)
-        if reported_w_g is not None:
-            density_g = reported_w_g
-            density_kg = reported_w_g * config.KG_TO_GRAM
-            luminosity_grav = density_kg * mass_kg
-            phi_source: PhiSourceType = "tabulated_erd"
-            eta_value = float("nan")
+        if category == config.CATEGORY_SUPERMASSIVE_BLACK_HOLES:
+            eta_value = config.SMBH_ACCRETION_EFFICIENCY
+            luminosity_grav = accretion_luminosity_watts(mdot_kg_s, eta_value)
+            density_kg = power_density_from_luminosity(luminosity_grav, mass_kg)
+            phi_source: PhiSourceType = "computed_from_mdot"
         else:
-            phi_source = "computed_from_mdot"
-            eta_value = eta_grav
+            eta_grav = gravitational_efficiency(mass_kg, radius_m)
+            luminosity_grav = accretion_luminosity_watts(mdot_kg_s, eta_grav)
+            density_kg = power_density_from_luminosity(luminosity_grav, mass_kg)
+            if reported_w_kg is not None:
+                density_kg = reported_w_kg
+                luminosity_grav = density_kg * mass_kg
+                phi_source = "tabulated_erd"
+                eta_value = float("nan")
+            else:
+                phi_source = "computed_from_mdot"
+                eta_value = eta_grav
         results.append(
             PowerDensityResult(
                 name=name,
                 category=category,
                 mass_kg=mass_kg,
-                mass_g=mass_g,
                 mdot_kg_s=mdot_kg_s,
                 radius_m=radius_m,
                 eta=eta_value,
                 luminosity_w=luminosity_grav,
                 power_density_w_per_kg=density_kg,
-                power_density_w_per_g=density_g,
                 track="gravitational",
                 phi_source=phi_source,
             )
@@ -188,31 +181,27 @@ def compute_compact_object_tracks(row: pd.Series) -> list[PowerDensityResult]:
                     name=name,
                     category=category,
                     mass_kg=mass_kg,
-                    mass_g=mass_g,
                     mdot_kg_s=mdot_kg_s,
                     radius_m=radius_m,
                     eta=eta_nuclear,
                     luminosity_w=luminosity_nuclear,
                     power_density_w_per_kg=density_nuclear,
-                    power_density_w_per_g=w_per_kg_to_w_per_g(density_nuclear),
                     track="nuclear",
                     phi_source="computed_from_mdot",
                 )
             )
-    elif reported_w_g is not None:
-        density_kg = reported_w_g * config.KG_TO_GRAM
+    elif reported_w_kg is not None:
+        density_kg = reported_w_kg
         results.append(
             PowerDensityResult(
                 name=name,
                 category=category,
                 mass_kg=mass_kg,
-                mass_g=mass_g,
                 mdot_kg_s=float("nan"),
                 radius_m=radius_m,
                 eta=float("nan"),
                 luminosity_w=density_kg * mass_kg,
                 power_density_w_per_kg=density_kg,
-                power_density_w_per_g=reported_w_g,
                 track="gravitational",
                 phi_source="tabulated_erd",
             )
@@ -234,18 +223,44 @@ def compute_all_compact_results(dataframe: pd.DataFrame) -> pd.DataFrame:
                     "category": result.category,
                     "track": result.track,
                     "mass_kg": result.mass_kg,
-                    "mass_g": result.mass_g,
                     "mass_msun": result.mass_kg / config.SOLAR_MASS,
                     "mdot_kg_s": result.mdot_kg_s,
                     "radius_m": result.radius_m,
                     "eta": result.eta,
                     "luminosity_w": result.luminosity_w,
                     "power_density_w_per_kg": result.power_density_w_per_kg,
-                    "power_density_w_per_g": result.power_density_w_per_g,
                     "phi_source": result.phi_source,
                 }
             )
-    return pd.DataFrame.from_records(records)
+    return select_si_columns(pd.DataFrame.from_records(records), PROCESSED_COMPACT_SI_COLUMNS)
+
+
+def display_track_for_category(category: str) -> TrackType:
+    """Plot track per compact-object class — WDs use nuclear fusion efficiency."""
+    if category == config.CATEGORY_CATACLYSMIC_VARIABLES:
+        return "nuclear"
+    return "gravitational"
+
+
+def select_plot_compact_results(compact_results: pd.DataFrame) -> pd.DataFrame:
+    """
+    One plotted row per compact object.
+
+    WDs: nuclear track (eta = 0.007, computed from Mdot).
+    NS/BH: gravitational track (tabulated ERD when available).
+    """
+    parts: list[pd.DataFrame] = []
+    for category in config.COMPACT_OBJECT_CATEGORIES:
+        track = display_track_for_category(category)
+        subset = compact_results[
+            (compact_results["category"] == category)
+            & (compact_results["track"] == track)
+        ]
+        if not subset.empty:
+            parts.append(subset)
+    if not parts:
+        return compact_results.iloc[0:0].copy()
+    return pd.concat(parts, ignore_index=True)
 
 
 def attach_dubus_wd_uncertainties(
@@ -253,10 +268,10 @@ def attach_dubus_wd_uncertainties(
     dubus_table: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Merge Dubus (2018) MC 68% intervals onto gravitational-track WD rows.
+    Merge Dubus (2018) MC 68% intervals onto nuclear-track WD rows.
 
-    X: symmetric M1 uncertainty. Y: Ṁ interval propagated to Φ_m at fixed η
-    (consistent with the plotted point, which uses tabulated ERD when present).
+    X: symmetric M1 uncertainty. Y: Mdot interval propagated to Phi_m at fixed
+    eta = WHITE_DWARF_NUCLEAR_EFFICIENCY (0.007).
     """
     result = compact_results.copy()
     for column in (
@@ -274,7 +289,7 @@ def attach_dubus_wd_uncertainties(
     dubus_by_name = dubus_table.set_index("name")
     mask = (
         (result["category"] == config.CATEGORY_CATACLYSMIC_VARIABLES)
-        & (result["track"] == "gravitational")
+        & (result["track"] == config.WHITE_DWARF_DISPLAY_TRACK)
     )
 
     for idx, row in result.loc[mask].iterrows():
@@ -337,15 +352,13 @@ def compute_yso_power_density(yso_dataframe: pd.DataFrame) -> pd.DataFrame:
 
     working["mass_msun"] = mass_msun
     working["mass_kg"] = solar_mass_to_kg(mass_msun)
-    working["mass_g"] = kg_to_grams(working["mass_kg"])
     working["lacc_w"] = (10.0 ** working["log_lacc"]) * config.SOLAR_LUMINOSITY
     working["power_density_w_per_kg"] = working["lacc_w"] / working["mass_kg"]
-    working["power_density_w_per_g"] = w_per_kg_to_w_per_g(working["power_density_w_per_kg"])
     working["mass_calibration"] = working.get(
         "mass_calibration",
         pd.Series("somers_2020_spots", index=working.index),
     )
-    return working
+    return select_si_columns(working, PROCESSED_YSO_SI_COLUMNS)
 
 
 def somers_spots_mass_inflation_factor(spot_coverage_fraction: float) -> float:

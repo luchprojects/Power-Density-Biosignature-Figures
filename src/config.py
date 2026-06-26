@@ -1,9 +1,7 @@
 """
 Physical, astronomical, and thermodynamic constants for the Power Density pipeline.
 
-All publication figures display power density in SI as W.kg-1 (Φ_m = L/M in kg).
-Internal processed tables may retain legacy W g^-1 columns for reproducibility;
-plotting always converts to and labels W.kg-1.
+All publication figures and processed tables use SI: kg, W, W.kg-1 (Phi_m = L/M).
 """
 
 from __future__ import annotations
@@ -62,6 +60,12 @@ KG_TO_GRAM = 1.0e3
 # ---------------------------------------------------------------------------
 
 WHITE_DWARF_NUCLEAR_EFFICIENCY = 0.007
+# WDs are plotted on the nuclear track: Phi_m = eta * Mdot * c^2 / M at eta = 0.007.
+WHITE_DWARF_DISPLAY_TRACK = "nuclear"
+
+# Thin-disc accretion onto a non-rotating (Schwarzschild) BH: binding energy at ISCO.
+# Frank, King & Raine (2002) Accretion Power in Astrophysics, 3rd ed., Ch. 7 (~0.057 c^2).
+SMBH_ACCRETION_EFFICIENCY = 0.057
 DEFAULT_NEUTRON_STAR_RADIUS_M = 1.2e4
 DEFAULT_STELLAR_MASS_BLACK_HOLE_RADIUS_SOLAR = 2.95e-5
 DEFAULT_WHITE_DWARF_RADIUS_SOLAR = 0.011
@@ -258,14 +262,6 @@ LEGEND_LOC_LOWER_RIGHT = "lower right"
 LEGEND_LAYOUT: dict[str, dict[str, object]] = {
     "unified": {"loc": LEGEND_LOC_UPPER_RIGHT},
     "biology": {"loc": LEGEND_LOC_LOWER_LEFT},
-    "yso": {
-        "loc": LEGEND_LOC_UPPER_RIGHT,
-        "fontsize": 8,
-        "labelspacing": 0.2,
-        "borderaxespad": 0.35,
-        "handletextpad": 0.3,
-        "handlelength": 1.5,
-    },
     "compact": {"loc": LEGEND_LOC_UPPER_RIGHT},
     "wd_uncertainties": {"loc": LEGEND_LOC_UPPER_RIGHT},
     "smbh": {"loc": LEGEND_LOC_UPPER_RIGHT},
@@ -278,16 +274,11 @@ MASTER_MASS_MIN_KG = 1.0e-25
 MASTER_MASS_MAX_KG = 1.0e47
 MASTER_RHO_MIN_WKG = 1.0e-9  # YSO accretion extends to ~2e-8 W·kg⁻¹ (Manara 2022)
 MASTER_RHO_MAX_WKG = 1.0e11
-# Legacy gram-axis aliases (processed tables still store mass_g / W g^-1)
-MASTER_MASS_MIN_G = MASTER_MASS_MIN_KG * KG_TO_GRAM
-MASTER_MASS_MAX_G = MASTER_MASS_MAX_KG * KG_TO_GRAM
-MASTER_RHO_MIN_WG = MASTER_RHO_MIN_WKG / KG_TO_GRAM
-MASTER_RHO_MAX_WG = MASTER_RHO_MAX_WKG / KG_TO_GRAM
+# Log-axis bounds in SI (kg, W.kg-1)
 
 FIGURE_UNIFIED_MASTER_PDF = FIGURES_DIR / "figure_unified_master.pdf"
 
 FIGURE_BIOLOGY_PDF = FIGURES_DIR / "figure_biology.pdf"
-FIGURE_YSO_PDF = FIGURES_DIR / "figure_yso.pdf"
 FIGURE_COMPACT_OBJECTS_PDF = FIGURES_DIR / "figure_compact_objects.pdf"
 FIGURE_COMPACT_PDF = FIGURE_COMPACT_OBJECTS_PDF  # backward-compatible alias
 FIGURE_WD_DUBUS_UNCERTAINTIES_PDF = FIGURES_DIR / "figure_wd_dubus_uncertainties.pdf"
@@ -318,6 +309,7 @@ PROCESSED_SMBH_CSV = PROCESSED_DIR / "processed_smbh_results.csv"
 PROCESSED_YSO_CSV = PROCESSED_DIR / "processed_yso_results.csv"
 VON_DUIN_ERD_CSV = DATA_BIOLOGY_DIR / "von_duin_2024_erd_moesm1.csv"
 PROCESSED_BIOLOGY_CSV = PROCESSED_DIR / "processed_von_duin_biology.csv"
+PROCESSED_SI_CSV = PROCESSED_DIR / "power_density_si.csv"
 DATA_TRACKING_LEDGER_CSV = PROCESSED_DIR / "data_tracking_ledger.csv"
 PROVENANCE_MANIFEST_JSON = PROCESSED_DIR / "provenance_manifest.json"
 
@@ -337,7 +329,7 @@ DOMAIN_YSO_RHO = (1.0e-8, 1.0e-3)  # full Manara sample (~2e-8–7e-4 W·kg⁻¹
 DOMAIN_COMPACT_MASS = (1.0e28, 1.0e32)
 DOMAIN_COMPACT_RHO = (1.0e-8, 1.0e4)  # WD Dubus error bars extend to ~3e-7 W·kg⁻¹
 DOMAIN_SMBH_MASS = (1.0e34, 1.0e39)
-DOMAIN_SMBH_RHO = (1.0e1, 1.0e4)
+DOMAIN_SMBH_RHO = (1.0e-2, 1.0e1)  # Phi_m from eta=0.057 thin-disc accretion (~0.02–1.5 W·kg⁻¹)
 
 # ApJ defense-grade colorblind-safe empirical palette
 # Empirical scatter — standard distinct colors (identical across all figures & reference tables)

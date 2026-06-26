@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-06-24T18:38:11.317601+00:00",
+  "generated_utc": "2026-06-25T18:25:54.773646+00:00",
   "mass_unit": "kg",
   "power_density_unit": "W.kg-1",
   "van_duin_limit_w_per_kg": 100000.0,
@@ -33,7 +33,6 @@
   "figures": {
     "unified_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_unified_master.pdf",
     "biology_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_biology.pdf",
-    "yso_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_yso.pdf",
     "compact_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_compact_objects.pdf",
     "compact_objects_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_compact_objects.pdf",
     "wd_uncertainties_pdf": "C:\\Users\\LuchK\\Power Density as a Biosignature\\figures\\figure_wd_dubus_uncertainties.pdf",
@@ -65,12 +64,11 @@
     "empirical_geometry": "geometric_decoupling_scatter",
     "scatter_layers": {
       "background": "YSO open rings (yellow, z=2.4 on unified)",
-      "midground": "Compact filled circles per category (s=40, z=2)",
+      "midground": "Compact filled circles per category and Seyfert 1 SMBHs (s=40, z=2)",
       "biology": "Biology filled circles per segment (s=40, z=3)"
     },
     "marker_shape": "o",
     "allowed_continuous_lines": [
-      "chaisson_2001_society_benchmark",
       "van_duin_stability_boundary"
     ],
     "axis_labels": {

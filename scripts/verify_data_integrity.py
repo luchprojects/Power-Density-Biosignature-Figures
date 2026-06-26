@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import config
+from physics_engine import select_plot_compact_results
 
 CHECKS: list[tuple[str, str]] = []
 
@@ -44,23 +45,31 @@ def main() -> int:
     biology = pd.read_csv(config.PROCESSED_BIOLOGY_CSV)
 
     smbH = pd.read_csv(config.PROCESSED_SMBH_CSV) if config.PROCESSED_SMBH_CSV.exists() else pd.DataFrame()
+    smbH_grav = smbH[smbH["track"] == "gravitational"] if not smbH.empty else smbH
 
-    grav = compact[compact["track"] == "gravitational"]
+    plot_compact = select_plot_compact_results(compact)
     ok(
-        f"Compact scatter: {len(grav)} points "
-        f"(WD={len(grav[grav.category == 'cataclysmic_variables'])}, "
-        f"NS={len(grav[grav.category == 'neutron_stars'])}, "
-        f"BH={len(grav[grav.category == 'transient_black_holes'])})"
+        f"Compact scatter: {len(plot_compact)} points "
+        f"(WD={len(plot_compact[plot_compact.category == 'cataclysmic_variables'])}, "
+        f"NS={len(plot_compact[plot_compact.category == 'neutron_stars'])}, "
+        f"BH={len(plot_compact[plot_compact.category == 'transient_black_holes'])})"
     )
     if not smbH.empty:
-        smbH_grav = smbH[smbH["track"] == "gravitational"]
         ok(f"SMBH scatter: {len(smbH_grav)} points (Vidal 2020 Table 5)")
+        smbH_eta = np.allclose(smbH_grav["eta"], config.SMBH_ACCRETION_EFFICIENCY)
+        smbH_computed = (smbH_grav["phi_source"] == "computed_from_mdot").all()
+        ok(
+            f"SMBH thin-disc track: eta={config.SMBH_ACCRETION_EFFICIENCY} ({smbH_eta}), "
+            f"phi_source=computed_from_mdot ({smbH_computed})"
+        )
     else:
         warn("SMBH processed CSV missing — run main.py")
     ok(f"YSO scatter: {len(yso)} points")
     ok(f"Biology scatter: {len(biology)} points")
 
-    for label, frame in [("compact", grav), ("yso", yso), ("biology", biology)]:
+    grav = compact[compact["track"] == "gravitational"]
+
+    for label, frame in [("compact", plot_compact), ("yso", yso), ("biology", biology)]:
         valid = (
             frame["mass_kg"].notna()
             & frame["power_density_w_per_kg"].notna()
@@ -69,7 +78,14 @@ def main() -> int:
         )
         ok(f"{label}: {valid.sum()}/{len(frame)} rows have mass & Phi_m from processed CSV")
 
-    wd = grav[grav["category"] == "cataclysmic_variables"]
+    wd = plot_compact[plot_compact["category"] == "cataclysmic_variables"]
+    if not wd.empty:
+        nuclear_eta = np.allclose(wd["eta"], config.WHITE_DWARF_NUCLEAR_EFFICIENCY)
+        computed = (wd["phi_source"] == "computed_from_mdot").all()
+        ok(
+            f"WD nuclear track: eta=0.007 ({nuclear_eta}), "
+            f"phi_source=computed_from_mdot ({computed})"
+        )
     if "mass_kg_err" in wd.columns:
         ok(f"WD Dubus errors: {wd['mass_kg_err'].notna().sum()} systems (literature intervals)")
     if "dubus_table" in wd.columns:
@@ -109,10 +125,25 @@ def main() -> int:
     for pdf in pdfs:
         ok(f"  {pdf.name} ({pdf.stat().st_size // 1024} KB)")
 
+    if config.PROCESSED_SI_CSV.exists():
+        si = pd.read_csv(config.PROCESSED_SI_CSV)
+        legacy_cols = [c for c in si.columns if c in {"mass_g", "power_density_w_per_g"}]
+        si_ok = not legacy_cols and {"mass_kg", "power_density_w_per_kg"}.issubset(si.columns)
+        expected = len(biology) + len(yso) + len(plot_compact) + (
+            len(smbH_grav) if not smbH.empty else 0
+        )
+        ok(
+            f"SI export: {len(si)} rows (expected {expected}), "
+            f"SI columns only ({si_ok}), legacy cols={legacy_cols or 'none'}"
+        )
+    else:
+        warn("Missing processed/power_density_si.csv — run main.py")
+
     manifest = json.loads(config.PROVENANCE_MANIFEST_JSON.read_text(encoding="utf-8"))
     ok(
         f"Provenance manifest: yso={manifest['yso_count']}, "
-        f"compact={manifest['compact_count']}, biology={manifest['biology_count']}"
+        f"compact={manifest['compact_count']}, biology={manifest['biology_count']}, "
+        f"smbh={manifest.get('smbh_count', 0)}"
     )
 
     print("\n=== DATA INTEGRITY AUDIT ===\n")

@@ -14,8 +14,8 @@ python main.py
 
 | Folder | Contents |
 |--------|----------|
-| `figures/` | Six PDF figures (main deliverables) |
-| `processed/` | Computed CSVs, provenance manifest, audit ledger |
+| `figures/` | Five PDF figures (main deliverables) |
+| `processed/` | Computed CSVs (SI units), provenance manifest, audit ledger |
 | `docs/` | PI Word guide + technical figure reference (Markdown) |
 | `data/` | Raw source tables only (do not edit unless updating sources) |
 
@@ -57,16 +57,15 @@ Power Density as a Biosignature/
 
 ---
 
-## Active figures (6)
+## Active figures (5)
 
 | PDF | Description |
 |-----|-------------|
-| `figure_unified_master.pdf` | Full continuum: biology + YSO + compact |
+| `figure_unified_master.pdf` | Full continuum: biology + YSO + compact + SMBH |
 | `figure_biology.pdf` | Biology zoom (van Duin ERD) |
-| `figure_yso.pdf` | Young stellar objects only |
-| `figure_compact_objects.pdf` | WDs, NSs, BHs only |
+| `figure_compact_objects.pdf` | WDs (with Dubus uncertainties), NSs, BHs |
 | `figure_wd_dubus_uncertainties.pdf` | WDs with Dubus (2018) error bars |
-| `figure_smbh_seyfert1.pdf` | Seyfert 1 SMBHs (Vidal Table 5 test panel) |
+| `figure_smbh_seyfert1.pdf` | Seyfert 1 SMBHs zoom (same cohort as unified master) |
 
 See **`docs/FIGURES.md`** for equations, file paths, and code entry points.
 
@@ -78,7 +77,7 @@ See **`docs/FIGURES.md`** for equations, file paths, and code entry points.
 \Phi_m = \frac{L}{M} \quad [\mathrm{W\,kg^{-1}}]
 \]
 
-Mass in **kg**; axis labels on all figures use SI W·kg⁻¹.
+Mass in **kg**; axis labels on all figures use SI W·kg⁻¹. All `processed/*.csv` tables use SI only (kg, W, W·kg⁻¹). The unified master export is `processed/power_density_si.csv`.
 
 ---
 
@@ -92,8 +91,8 @@ Mass in **kg**; axis labels on all figures use SI W·kg⁻¹.
 | WD uncertainties | `data/compact/dubus_2018_wd_uncertainties.csv` |
 | SMBH (Table 5) | `data/compact/vidal_2020_table5_smbh_seyfert1.csv` |
 
-Every scatter point comes from these tables or published literature reference lines (Chaisson, van Duin) — nothing is hand-placed.
+Every scatter point comes from these tables or the van Duin stability reference line — nothing is hand-placed.
 
 **Default:** `python main.py` reads committed CSVs. To rebuild compact/YSO/SMBH inputs from the Vidal PDF or Manara TSV, use `python main.py --rebuild-data`.
 
-NS/BH Φ_m uses **tabulated ERD** from Vidal (2020) with Clem's g/kg correction (÷1000 on Tables 3–4). Processed CSV includes `phi_source=tabulated_erd` where Ṁ is reference-only.
+NS/BH Φ_m uses **tabulated ERD** from Vidal (2020) with Clem's g/kg correction (÷1000 on Tables 3–4). WDs use **η = 0.007** nuclear fusion efficiency computed from Ṁ. SMBHs use **η = 0.057** thin-disc ISCO efficiency computed from Ṁ (Frank et al. 2002). Processed CSV includes `phi_source` marking tabulated vs computed values.

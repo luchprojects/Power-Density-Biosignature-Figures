@@ -23,20 +23,8 @@ FIGURE_TRACKING_ROWS: tuple[dict[str, str], ...] = (
             "unicellular eukaryote, and multicellular segments"
         ),
         "plot_rule": (
-            "Empirical scatter only; Chaisson (2001) modern society benchmark; "
-            "van Duin stability boundary"
+            "Empirical scatter only; van Duin stability boundary"
         ),
-        "task_owner": "LK",
-        "status": "automated",
-    },
-    {
-        "figure_asset": "figure_yso.pdf",
-        "data_source": "Manara et al. (2022) PPVII compilation",
-        "physics_validation": (
-            "Somers (2020) SPOTS mass inflation of Baraffe+2015 spotless masses; "
-            "Alcalá+2017 and Manara+2017 reference filter"
-        ),
-        "plot_rule": "Empirical scatter only; linestyle=none enforced",
         "task_owner": "LK",
         "status": "automated",
     },
@@ -44,10 +32,13 @@ FIGURE_TRACKING_ROWS: tuple[dict[str, str], ...] = (
         "figure_asset": "figure_compact_objects.pdf",
         "data_source": "Tables 1--4 (WDs, NSs, transient BHs)",
         "physics_validation": (
-            "Gravitational eta = GM/(Rc^2); WD nuclear track eta=0.007; "
-            "reported ERD where available"
+            "WD Phi_m from eta=0.007 nuclear fusion (L = eta Mdot c^2, computed from Mdot); "
+            "NS/BH gravitational eta = GM/(Rc^2) with tabulated ERD where available"
         ),
-        "plot_rule": "Gravitational track displayed; scatter markers only",
+        "plot_rule": (
+            "Gravitational track displayed; WD Dubus (2018) mass and Ṁ uncertainty bars; "
+            "NS/BH scatter markers only"
+        ),
         "task_owner": "CV",
         "status": "automated",
     },
@@ -59,7 +50,7 @@ FIGURE_TRACKING_ROWS: tuple[dict[str, str], ...] = (
         ),
         "physics_validation": (
             "68% MC intervals on M1 and mass transfer rate; "
-            "Phi_m uncertainty propagated from Ṁ and M1 (gravitational track)"
+            "Phi_m uncertainty propagated from Mdot and M1 at eta=0.007 (nuclear track)"
         ),
         "plot_rule": (
             "WD-only zoom panel with asymmetric error bars; "
@@ -72,13 +63,12 @@ FIGURE_TRACKING_ROWS: tuple[dict[str, str], ...] = (
         "figure_asset": "figure_unified_master.pdf",
         "data_source": "Integrated multi-scale continuum",
         "physics_validation": (
-            f"van Duin (2024) stability boundary at 10^5 {config.POWER_DENSITY_UNIT}; "
-            "Chaisson modern society (2001) benchmark as literature overlay"
+            f"van Duin (2024) stability boundary at 10^5 {config.POWER_DENSITY_UNIT}"
         ),
         "plot_rule": (
             "Geometric decoupling scatter: YSO open rings (yellow, z=2.4), compact filled circles "
-            "per category (z=2), biology filled circles per segment (z=3); Chaisson society "
-            "benchmark; van Duin solid upper reference"
+            "per category (z=2), Seyfert 1 SMBHs (violet, z=2), biology filled circles per segment "
+            "(z=3); van Duin solid upper reference"
         ),
         "task_owner": "CV & LK",
         "status": "automated",
@@ -90,12 +80,11 @@ FIGURE_TRACKING_ROWS: tuple[dict[str, str], ...] = (
             "parsed from references/Vidal-2020 PDF"
         ),
         "physics_validation": (
-            "Tabulated ERD (erg s^-1 g^-1) with eta=0.1 accretion efficiency per Vidal; "
-            "Schwarzschild radius for gravitational track"
+            "Phi_m = eta Mdot c^2 / M with eta=0.057 (Frank et al. 2002, thin-disc ISCO "
+            "floor for non-rotating BH); computed from Vidal Table 5 Mdot, not tabulated ERD"
         ),
         "plot_rule": (
-            "Separate test panel — not on unified master; scatter only; "
-            "Chaisson modern society benchmark"
+            "Zoomed SMBH panel; same scatter as unified master"
         ),
         "task_owner": "LK",
         "status": "automated",
@@ -169,12 +158,13 @@ def write_provenance_manifest(
             "empirical_geometry": "geometric_decoupling_scatter",
             "scatter_layers": {
                 "background": "YSO open rings (yellow, z=2.4 on unified)",
-                "midground": "Compact filled circles per category (s=40, z=2)",
+                "midground": (
+                    "Compact filled circles per category and Seyfert 1 SMBHs (s=40, z=2)"
+                ),
                 "biology": "Biology filled circles per segment (s=40, z=3)",
             },
             "marker_shape": config.PLOT_MARKER_SHAPE,
             "allowed_continuous_lines": [
-                "chaisson_2001_society_benchmark",
                 "van_duin_stability_boundary",
             ],
             "axis_labels": {

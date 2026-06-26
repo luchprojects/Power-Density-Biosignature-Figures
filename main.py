@@ -22,6 +22,8 @@ import von_duin_biology
 import physics_engine
 import plotter
 import provenance
+import si_export
+from si_columns import PROCESSED_COMPACT_SI_COLUMNS, select_si_columns
 
 
 def configure_logging(verbose: bool) -> None:
@@ -81,6 +83,7 @@ def run_pipeline(
     compact_results = physics_engine.attach_dubus_wd_uncertainties(
         compact_results, dubus_table
     )
+    compact_results = select_si_columns(compact_results, PROCESSED_COMPACT_SI_COLUMNS)
     compact_export = config.PROCESSED_COMPACT_CSV
     compact_results.to_csv(compact_export, index=False)
     logger.info("Exported %d compact track rows to %s", len(compact_results), compact_export)
@@ -108,6 +111,15 @@ def run_pipeline(
     biology_samples.to_csv(config.PROCESSED_BIOLOGY_CSV, index=False)
     biology_summary = von_duin_biology.segment_summary(biology_samples)
     logger.info("Biology segment counts:\n%s", biology_summary.to_string(index=False))
+
+    logger.info("Exporting unified SI table (kg, W, W·kg⁻¹)...")
+    si_path, si_count = si_export.export_power_density_si_csv(
+        compact_results=compact_results,
+        yso_results=yso_results,
+        biology_results=biology_samples,
+        smbH_results=smbH_results,
+    )
+    logger.info("Exported %d SI rows to %s", si_count, si_path)
 
     logger.info("Writing data tracking ledger...")
     ledger_path = provenance.write_tracking_ledger()

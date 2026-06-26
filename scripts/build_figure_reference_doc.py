@@ -15,14 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import config
+from physics_engine import select_plot_compact_results
 
 DOC_PATH = config.FIGURE_REFERENCE_DOC
 
 # Shared reference-overlay blurb (biology + unified figures only).
-CHAISSON_OVERLAY_NOTE = (
-    "Literature overlays (not data): Chaisson (2001) modern society benchmark "
-    f"(~{config.CHAISSON_2001_SOCIETY_W_PER_KG:g} W·kg⁻¹); "
-    f"van Duin (2024) stability limit at 10⁵ W·kg⁻¹."
+VAN_DUIN_OVERLAY_NOTE = (
+    "Literature overlay (not data): van Duin (2024) stability limit at 10⁵ W·kg⁻¹."
 )
 
 
@@ -47,7 +46,8 @@ def _figure_entries(
             {
                 "Purpose": (
                     "Overview of the full power-density continuum — biology, young stellar objects "
-                    "(YSOs), and accreting compact objects on one log–log plot."
+                    "(YSOs), accreting compact objects, and Seyfert 1 supermassive black holes on "
+                    "one log–log plot."
                 ),
                 "Data source": (
                     f"Biology — van Duin et al. (2024) MOESM1 Section I "
@@ -57,17 +57,22 @@ def _figure_entries(
                     "Somers 2020 SPOTS masses). "
                     f"Compact objects — Vidal (2020) tables "
                     f"(data/compact/Power density data.csv; {cv_n} white dwarfs [Dubus et al. 2018], "
-                    f"{ns_n} neutron stars [Galloway et al. 2008], {bh_n} black holes [Coriat et al. 2012])."
+                    f"{ns_n} neutron stars [Galloway et al. 2008], {bh_n} black holes [Coriat et al. 2012]). "
+                    f"SMBHs — Vidal (2020) Table 5 "
+                    f"(data/compact/vidal_2020_table5_smbh_seyfert1.csv; {smbH_n} Seyfert 1 systems "
+                    "[Meyer-Hofmeister & Meyer 2011])."
                 ),
                 "Equations": (
                     "All panels use Φ_m = L / M (W·kg⁻¹, mass in kg). "
                     "Biology: Φ_m from tabulated empirical ERD. "
                     "YSOs: Φ_m = L_acc / M★. "
-                    "Compact objects: η = GM/(Rc²), L = η Ṁ c², Φ_m = L/M; tabulated ERD used when available."
+                    "WDs: η = 0.007 (nuclear fusion), L = η Ṁ c², Φ_m = L/M from tabulated Ṁ. "
+                    "NS/BH: η = GM/(Rc²), L = η Ṁ c², Φ_m = L/M; tabulated ERD used when available."
                 ),
                 "Notes": (
-                    f"{CHAISSON_OVERLAY_NOTE} WDs: green = Dubus Table A.2 (general CVs), "
-                    "fuchsia = Table A.3 (nova-like); YSO: open yellow rings on top. "
+                    f"{VAN_DUIN_OVERLAY_NOTE} WDs: green = Dubus Table A.2 (general CVs), "
+                    "fuchsia = Table A.3 (nova-like); SMBHs: violet filled circles; "
+                    "YSO: open yellow rings on top. "
                     "No error bars on this panel — see figure_wd_dubus_uncertainties.pdf."
                 ),
             },
@@ -86,23 +91,7 @@ def _figure_entries(
                 "Equations": (
                     "Φ_m taken directly from the published ERD column (already in W·kg⁻¹)."
                 ),
-                "Notes": CHAISSON_OVERLAY_NOTE,
-            },
-        ),
-        (
-            "figure_yso.pdf",
-            {
-                "Purpose": (
-                    "Abiotic control sample — accreting young stars only, without biology or compact objects."
-                ),
-                "Data source": (
-                    f"Manara et al. (2022) PPVII → mdots_forclement.dat ({yso_n} systems). "
-                    "Stellar masses from Baraffe+2015 with Somers (2020) SPOTS correction (17% spot coverage)."
-                ),
-                "Equations": (
-                    "Φ_m = L_acc / M★, with L_acc = 10^(log L_acc) × L☉."
-                ),
-                "Notes": "Empirical scatter only; no literature reference overlays.",
+                "Notes": VAN_DUIN_OVERLAY_NOTE,
             },
         ),
         (
@@ -117,11 +106,15 @@ def _figure_entries(
                     f"{ns_n} NSs (Galloway et al. 2008), {bh_n} BHs (Coriat et al. 2012)."
                 ),
                 "Equations": (
-                    "η_grav = GM/(Rc²); L = η Ṁ c²; Φ_m = L/M. Tabulated ERD overrides the computed value when both are present."
+                    "WDs: η = 0.007 (nuclear fusion), L = η Ṁ c², Φ_m = L/M from tabulated Ṁ. "
+                    "NS/BH: η_grav = GM/(Rc²); L = η Ṁ c²; Φ_m = L/M. "
+                    "Tabulated ERD overrides the computed value when both are present (NS/BH only)."
                 ),
                 "Notes": (
                     "WD colors: green = Dubus Table A.2 (general CVs), fuchsia = Table A.3 (nova-like). "
-                    "No YSO overlay. van Duin stability line shown; no Chaisson overlays."
+                    "WD error bars: Dubus (2018) M₁ and Ṁ uncertainties (same as "
+                    "figure_wd_dubus_uncertainties.pdf). NS/BH: scatter only. "
+                    "No YSO overlay. van Duin stability line shown."
                 ),
             },
         ),
@@ -152,8 +145,8 @@ def _figure_entries(
             "figure_smbh_seyfert1.pdf",
             {
                 "Purpose": (
-                    "Test panel for Seyfert 1 supermassive black holes — separate from the unified "
-                    "master continuum."
+                    "Zoomed test panel for Seyfert 1 supermassive black holes — same cohort as "
+                    "on the unified master."
                 ),
                 "Data source": (
                     f"Vidal (2020) Table 5 — {smbH_n} Seyfert 1 SMBHs from Meyer-Hofmeister & Meyer (2011), "
@@ -166,8 +159,8 @@ def _figure_entries(
                     "from Ṁ; tabulated ERD overrides when both are present."
                 ),
                 "Notes": (
-                    "Not plotted on figure_unified_master.pdf. Chaisson modern society benchmark shown; "
-                    "no error bars (none in source table)."
+                    "Also plotted on figure_unified_master.pdf. "
+                    "No error bars (none in source table)."
                 ),
             },
         ),
@@ -242,6 +235,7 @@ def build_document_from_pipeline(
     smbH_results=None,
 ) -> Path:
     """Build the Word document using live pipeline DataFrame counts."""
+    plot_compact = select_plot_compact_results(compact_results)
     grav = compact_results[compact_results["track"] == "gravitational"]
     bio_n = 0
     if biology_results is not None and not biology_results.empty:
@@ -252,7 +246,7 @@ def build_document_from_pipeline(
 
     return build_document(
         yso_n=len(yso_results),
-        cv_n=int((grav["category"] == config.CATEGORY_CATACLYSMIC_VARIABLES).sum()),
+        cv_n=int((plot_compact["category"] == config.CATEGORY_CATACLYSMIC_VARIABLES).sum()),
         ns_n=int((grav["category"] == config.CATEGORY_NEUTRON_STARS).sum()),
         bh_n=int((grav["category"] == config.CATEGORY_TRANSIENT_BLACK_HOLES).sum()),
         bio_n=bio_n,

@@ -9,7 +9,7 @@ All figures share ApJ-style log–log axes unless noted. Power density is always
 
 ## 1. `figure_unified_master.pdf`
 
-**Purpose:** Single overview of the full power-density continuum — biology, YSOs, and compact accretors.
+**Purpose:** Single overview of the full power-density continuum — biology, YSOs, compact accretors, and Seyfert 1 SMBHs.
 
 **Data sources**
 
@@ -18,22 +18,24 @@ All figures share ApJ-style log–log axes unless noted. Power density is always
 | Biology | `data/biology/von_duin_2024_erd_moesm1.csv` | `von_duin_biology.combined_biology_table()` |
 | YSO | `data/yso/mdots_forclement.dat` (built from Manara TSV) | `data_loader.load_mdots_forclement()` |
 | Compact | `data/compact/Power density data.csv` | `data_loader.load_compact_objects()` |
+| SMBH | `data/compact/vidal_2020_table5_smbh_seyfert1.csv` | `data_loader.load_supermassive_black_holes()` |
 
 **Math**
 
 - Biology / compact (when ERD tabulated): Φ_m from reported ERD (W·kg⁻¹).
 - YSO: Φ_m = L_acc / M_star with L_acc from log L_acc and M_star from Somers (2020) SPOTS-inflated Baraffe+2015 mass.
 - Compact (gravitational track): η_grav = GM/(Rc²), L = η Ṁ c², Φ_m = L/M; uses tabulated ERD when present.
+- **WDs:** Φ_m = η Ṁ c² / M with **η = 0.007** (nuclear fusion efficiency), computed from Ṁ — not tabulated ERD.
+- SMBH: same gravitational track as compact objects; tabulated ERD from Vidal (2020) Table 5 (η = 0.1).
 
 **Literature overlays (lines only, not scatter)**
 
-- Chaisson (2001) benchmark: modern society only (~50 W·kg⁻¹).
 - van Duin (2024) stability boundary: 10⁵ W·kg⁻¹.
 
 **Code**
 
 - Mode: `"unified"` in `plotter.create_domain_figure()`
-- Draw order: compact (mid) → YSO rings → biology circles on top. WDs: **green** = Dubus Table A.2 (general CVs), **fuchsia** = Table A.3 (nova-like); YSO: open yellow rings.
+- Draw order: compact (mid) → SMBH (mid) → YSO rings → biology circles on top. WDs: **green** = Dubus Table A.2 (general CVs), **fuchsia** = Table A.3 (nova-like); SMBHs: **violet** filled circles; YSO: open yellow rings.
 - No error bars on this panel (WD uncertainties: `figure_wd_dubus_uncertainties.pdf`).
 
 ---
@@ -48,29 +50,15 @@ All figures share ApJ-style log–log axes unless noted. Power density is always
 
 **Segments:** Prokaryotes (brown), Eukaryotes (slate blue), Multicellular (forest green) — filled circles.
 
-**Overlays:** Chaisson (2001) modern society benchmark; van Duin 10⁵ W·kg⁻¹ line.
+**Overlays:** van Duin 10⁵ W·kg⁻¹ line.
 
 **Code:** `create_domain_figure(mode="biology")` → `_plot_von_duin_biology_scatter()`.
 
----
-
-## 3. `figure_yso.pdf`
-
-**Purpose:** Abiotic control sample — accreting young stars only.
-
-**Data:** Manara et al. (2022) PPVII; filtered to Alcalá+2017 / Manara+2017 references; masses SPOTS-corrected.
-
-**Math**
-
-\[
-\Phi_m = \frac{L_{\mathrm{acc}}}{M_\star}, \quad L_{\mathrm{acc}} = 10^{\log L_{\mathrm{acc}}} \times L_\odot
-\]
-
-**Code:** `create_domain_figure(mode="yso")` → `_plot_yso_scatter()`; `physics_engine.compute_yso_power_density()`.
+YSO data are plotted only on the unified master (`_plot_yso_scatter()` in unified mode; `physics_engine.compute_yso_power_density()`).
 
 ---
 
-## 4. `figure_compact_objects.pdf`
+## 3. `figure_compact_objects.pdf`
 
 **Purpose:** Accreting compact objects only — WDs, neutron stars, transient BHs.
 
@@ -88,13 +76,16 @@ All figures share ApJ-style log–log axes unless noted. Power density is always
 \eta_{\mathrm{grav}} = \frac{GM}{Rc^2}, \quad L = \eta\,\dot M\, c^2, \quad \Phi_m = \frac{L}{M}
 \]
 
-Tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
+**WDs:** η = 0.007 (nuclear fusion); Φ_m computed from Ṁ, not tabulated ERD.  
+**NS/BH:** tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
 
-**Code:** `create_domain_figure(mode="compact")` → `_plot_compact_scatter()`; WDs at full opacity on this panel.
+**WD uncertainties:** Dubus et al. (2018) Tables A.2–A.3 — symmetric M₁ errors and asymmetric 68% MC Ṁ intervals propagated to Φ_m (same as `figure_wd_dubus_uncertainties.pdf`).
+
+**Code:** `create_domain_figure(mode="compact")` → `_plot_compact_scatter(show_errors=True)` for WDs; `physics_engine.attach_dubus_wd_uncertainties()`.
 
 ---
 
-## 5. `figure_wd_dubus_uncertainties.pdf`
+## 4. `figure_wd_dubus_uncertainties.pdf`
 
 **Purpose:** WD-only panel with literature uncertainty bars (separate from main continuum).
 
@@ -113,9 +104,9 @@ Tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
 
 ---
 
-## 6. `figure_smbh_seyfert1.pdf`
+## 5. `figure_smbh_seyfert1.pdf`
 
-**Purpose:** Separate test panel for Seyfert 1 supermassive black holes — **not** on the unified master.
+**Purpose:** Zoomed panel for Seyfert 1 supermassive black holes — same cohort as on the unified master.
 
 **Data**
 
@@ -130,7 +121,7 @@ Tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
 - M_BH, Ṁ, and tabulated ERD (erg·s⁻¹·g⁻¹) from Vidal Table 5 (η = 0.1).
 - Φ_m uses tabulated ERD when present; Schwarzschild radius for the gravitational track.
 
-**Overlays:** Chaisson modern society benchmark only (van Duin line off-scale on this zoom).
+**Overlays:** None (van Duin line off-scale on this zoom).
 
 **Code:** `load_supermassive_black_holes()` → `create_domain_figure(mode="smbh")` → `_plot_smbh_scatter()`.
 
@@ -140,6 +131,7 @@ Tabulated ERD overrides computed Φ_m when both Ṁ and ERD exist.
 
 | File | Contents |
 |------|----------|
+| `processed/power_density_si.csv` | Unified master cohort in SI only (kg, W, W·kg⁻¹) |
 | `processed/processed_compact_results.csv` | All compact tracks + Dubus uncertainty columns; `phi_source` marks tabulated ERD vs Ṁ-derived Φ_m |
 | `processed/processed_smbh_results.csv` | Seyfert 1 SMBH Φ_m (Vidal Table 5) |
 | `processed/processed_yso_results.csv` | YSO Φ_m, masses, L_acc |

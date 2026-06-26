@@ -17,3 +17,4 @@ Thumbs.db
 # Optional local scratch (not part of deliverables)
 _integrity_check.txt
 _audit_labels.txt
+scripts/_*.txt

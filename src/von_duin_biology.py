@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 import config
+from si_columns import PROCESSED_BIOLOGY_SI_COLUMNS, select_si_columns
 
 VON_DUIN_LABEL = "van Duin (2024)"
 VON_DUIN_HEADER_ROW = 6
@@ -157,14 +158,15 @@ def load_von_duin_erd_table(path: Path | None = None) -> pd.DataFrame:
     if classified.empty:
         raise ValueError("No biology rows matched Prokaryotes/Eukaryotes/Multicellular.")
 
-    classified["mass_g"] = classified["mass_kg"] * config.KG_TO_GRAM
     classified["power_density_w_per_kg"] = classified["erd_wkg"]
-    classified["power_density_w_per_g"] = classified["erd_wkg"] / config.KG_TO_GRAM
     classified["color"] = classified["segment"].map(
         {spec.label: spec.color for spec in BIOLOGY_SEGMENTS}
     )
     classified["data_source"] = VON_DUIN_LABEL
-    return classified.reset_index(drop=True)
+    export = classified.drop(columns=["sub_realm", "group"], errors="ignore").rename(
+        columns={"sub_realm_ff": "sub_realm", "group_ff": "group"}
+    )
+    return select_si_columns(export, PROCESSED_BIOLOGY_SI_COLUMNS).reset_index(drop=True)
 
 
 def combined_biology_table(path: Path | None = None) -> pd.DataFrame:

@@ -3,7 +3,7 @@ Unified master figure for the power-density evolutionary continuum.
 
 ApJ-compliant log-log charts: geometric decoupling scatter layers (YSO open rings on unified
 master, solid compact mid-ground with per-category colors, biology on top with per-segment
-filled circles); Chaisson and van Duin literature references as solid colored lines.
+filled circles); van Duin stability boundary as a solid reference line.
 """
 
 from __future__ import annotations
@@ -21,11 +21,11 @@ from matplotlib.ticker import LogFormatterMathtext
 
 import config
 import von_duin_biology
+from physics_engine import select_plot_compact_results
 
 FigureMode = Literal[
     "unified",
     "biology",
-    "yso",
     "compact",
     "wd_uncertainties",
     "smbh",
@@ -610,8 +610,6 @@ def _axis_limits_for_mode(mode: FigureMode) -> tuple[tuple[float, float], tuple[
         return (UNIFIED_XLIM, UNIFIED_YLIM)
     if mode == "biology":
         return (config.DOMAIN_BIOLOGY_MASS, config.DOMAIN_BIOLOGY_RHO)
-    if mode == "yso":
-        return (config.DOMAIN_YSO_MASS, config.DOMAIN_YSO_RHO)
     if mode == "compact":
         return (config.DOMAIN_COMPACT_MASS, config.DOMAIN_COMPACT_RHO)
     if mode == "wd_uncertainties":
@@ -652,23 +650,6 @@ def _add_van_duin_bound(axis: Axes, rho_limits: tuple[float, float]) -> None:
         )
 
 
-def _add_chaisson_reference_overlays(
-    axis: Axes,
-    mass_limits: tuple[float, float],
-    rho_limits: tuple[float, float],
-) -> None:
-    """Chaisson (2001) modern society benchmark — literature overlay, not CSV scatter."""
-    del mass_limits  # society benchmark is a horizontal Φ_m level only
-    if rho_limits[0] <= config.CHAISSON_2001_SOCIETY_W_PER_KG <= rho_limits[1]:
-        _reference_hline(
-            axis,
-            config.CHAISSON_2001_SOCIETY_W_PER_KG,
-            color=config.COLOR_REF_CHAISSON_SOCIETY,
-            label=config.CHAISSON_SOCIETY_BENCHMARK_LABEL,
-            zorder=2,
-        )
-
-
 def _apply_apj_legend(axis: Axes, mode: FigureMode | str) -> None:
     """Opaque white legend card — per-figure anchor avoids collisions."""
     layout = dict(config.LEGEND_LAYOUT.get(mode, {"loc": config.LEGEND_LOC_UPPER_RIGHT}))
@@ -695,8 +676,6 @@ def _apply_apj_legend(axis: Axes, mode: FigureMode | str) -> None:
 def _is_permitted_analytical_line(label: str, linestyle: str) -> bool:
     if label == config.VAN_DUIN_LEGEND_LABEL and linestyle in ("-", "solid"):
         return True
-    if "Chaisson" in label and linestyle in ("-", "solid"):
-        return True
     if label in ("_nolegend_",):
         return True
     return False
@@ -704,8 +683,8 @@ def _is_permitted_analytical_line(label: str, linestyle: str) -> bool:
 
 def audit_figure_geometry(figure: Figure) -> None:
     """
-    Verify ApJ plot geometry: empirical scatter only; Chaisson overlays and
-    van Duin stability boundary are the sole permitted connected lines.
+    Verify ApJ plot geometry: empirical scatter only; van Duin stability boundary
+    is the sole permitted connected reference line.
     """
     from matplotlib.lines import Line2D
 
@@ -912,9 +891,9 @@ def _plot_compact_scatter(
     if compact_results.empty:
         return
 
-    display = compact_results[compact_results["track"] == "gravitational"].copy()
+    display = select_plot_compact_results(compact_results)
     if display.empty:
-        display = compact_results.copy()
+        return
 
     for category in config.COMPACT_OBJECT_CATEGORIES:
         rows = display[display["category"] == category]
@@ -1028,7 +1007,7 @@ def _plot_wd_dubus_uncertainties(
     """WD-only panel with Dubus (2018) MC 68% mass and Ṁ uncertainties."""
     rows = compact_results[
         (compact_results["category"] == config.CATEGORY_CATACLYSMIC_VARIABLES)
-        & (compact_results["track"] == "gravitational")
+        & (compact_results["track"] == config.WHITE_DWARF_DISPLAY_TRACK)
     ]
     if rows.empty:
         return
@@ -1084,22 +1063,19 @@ def create_domain_figure(
     figure_size = config.MASTER_FIGURE_SIZE if mode == "unified" else config.DOMAIN_FIGURE_SIZE
     figure, axis = plt.subplots(figsize=figure_size)
     _configure_axes(axis, mass_limits, rho_limits)
-    if mode in {"unified", "biology"}:
-        _add_chaisson_reference_overlays(axis, mass_limits, rho_limits)
-    if mode == "smbh":
-        _add_chaisson_reference_overlays(axis, mass_limits, rho_limits)
     if mode not in {"wd_uncertainties", "smbh"}:
         _add_van_duin_bound(axis, rho_limits)
 
-    show_yso_errors = mode != "unified"
-    # Compact scatter matches unified on overlay panels; error bars only on wd_uncertainties.
-    show_compact_errors = False
+    # WD Dubus (2018) error bars on the compact panel; scatter only on unified master.
+    show_compact_errors = mode == "compact"
 
-    # Draw order on unified: solid compact (WD green) → YSO rings → biology
+    # Draw order on unified: solid compact (WD green) → SMBH → YSO rings → biology
     if mode == "unified":
         _plot_compact_scatter(
             axis, compact_results, show_errors=show_compact_errors, mode=mode
         )
+        if smbH_results is not None and not smbH_results.empty:
+            _plot_smbh_scatter(axis, smbH_results)
         _plot_yso_scatter(
             axis,
             yso_results,
@@ -1108,8 +1084,6 @@ def create_domain_figure(
             marker_zorder=config.YSO_UNIFIED_MARKER_ZORDER,
             use_rings=True,
         )
-    elif mode == "yso":
-        _plot_yso_scatter(axis, yso_results, show_errors=show_yso_errors)
     if mode == "compact":
         _plot_compact_scatter(
             axis, compact_results, show_errors=show_compact_errors, mode=mode
@@ -1157,12 +1131,14 @@ def create_unified_master_figure(
     compact_results: pd.DataFrame,
     yso_results: pd.DataFrame,
     biology_samples: pd.DataFrame | None = None,
+    smbH_results: pd.DataFrame | None = None,
 ) -> Figure:
     return create_domain_figure(
         mode="unified",
         compact_results=compact_results,
         yso_results=yso_results,
         biology_samples=biology_samples,
+        smbH_results=smbH_results,
     )
 
 
@@ -1197,15 +1173,14 @@ def save_all_figures(
     """
     Export ApJ publication figures (vector PDF only).
 
-    Unified master: scatter only. Zoom panels: error bars only when datasets supply them.
-    SMBH panel is separate from the unified master continuum.
+    Unified master: scatter only (includes Seyfert 1 SMBHs). Zoom panels: error bars only
+    when datasets supply them. SMBH zoom panel remains available separately.
     """
     _clear_existing_figures()
 
     domain_specs: list[tuple[FigureMode, Path]] = [
         ("unified", config.FIGURE_UNIFIED_MASTER_PDF),
         ("biology", config.FIGURE_BIOLOGY_PDF),
-        ("yso", config.FIGURE_YSO_PDF),
         ("compact", config.FIGURE_COMPACT_OBJECTS_PDF),
         ("wd_uncertainties", config.FIGURE_WD_DUBUS_UNCERTAINTIES_PDF),
         ("smbh", config.FIGURE_SMBH_PDF),
