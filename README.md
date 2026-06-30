@@ -4,7 +4,7 @@ Generate two publication figures: mass vs. power density (Φ_m in W·kg⁻¹).
 
 ## Quick start
 
-```powershell
+```
 cd "Power Density as a Biosignature"
 pip install -r requirements.txt
 python main.py
@@ -21,8 +21,8 @@ Outputs land in **`figures/`** as publication-ready vector PDFs:
 
 ```
 Power Density as a Biosignature/
-├── main.py              ← run this
-├── requirements.txt
+├── main.py              ← main script to run 
+├── requirements.txt     package requirements
 ├── src/                 pipeline code
 ├── data/                raw input tables (do not edit unless updating sources)
 └── figures/             generated PDFs
@@ -38,6 +38,4 @@ Power Density as a Biosignature/
 | WD uncertainties | `data/compact/dubus_2018_wd_uncertainties.csv` |
 | SMBH | `data/compact/vidal_2020_table5_smbh_seyfert1.csv` (unified master only) |
 
-## Equation
 
-Φ_m = L / M  [W·kg⁻¹], with mass in kg and luminosity in W.
