@@ -3,7 +3,7 @@ Data ingestion and cleaning for multi-domain power-density datasets.
 
 Canonical workspace inputs
 ----------------------------
-- ``data/Power density data.csv`` — compact objects (WD / NS / transient BH)
+- ``data/compact/Power_density_data.csv`` — compact objects (WD / NS / transient BH)
 - ``data/yso/Manara_et_al_2022.dat`` — YSO accretion parameters (Manara et al. 2022)
 - Manara PPVII compilation (TSV / CSV) — supplemental YSO metadata
 """
@@ -315,7 +315,7 @@ def load_supermassive_black_holes(path: Path | None = None, rebuild: bool = Fals
 
 def assemble_compact_objects_csv(output_path: Path | None = None) -> Path:
     """
-    Build ``data/Power density data.csv`` from verified workspace sources.
+    Build ``data/compact/Power_density_data.csv`` from verified workspace sources.
 
     WDs: Table 1 accreting WDs CSV
     NSs: Vidal (2020) PDF Table 2 text layer (30 systems)

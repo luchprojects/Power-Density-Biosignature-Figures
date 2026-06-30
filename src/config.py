@@ -21,7 +21,7 @@ DATA_COMPACT_DIR = DATA_DIR / "compact"
 DATA_YSO_DIR = DATA_DIR / "yso"
 FIGURES_DIR = PROJECT_ROOT / "figures"
 
-COMPACT_OBJECTS_CSV = DATA_COMPACT_DIR / "Power density data.csv"
+COMPACT_OBJECTS_CSV = DATA_COMPACT_DIR / "Power_density_data.csv"
 SMBH_OBJECTS_CSV = DATA_COMPACT_DIR / "meyer_hofmeister_meyer_2011.csv"
 MANARA_MDOTS_DAT = DATA_YSO_DIR / "Manara_et_al_2022.dat"
 
