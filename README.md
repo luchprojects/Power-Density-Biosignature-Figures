@@ -35,7 +35,7 @@ Power Density as a Biosignature/
 | Domain | File |
 |--------|------|
 | Biology | `data/biology/von_duin_2024_erd_moesm1.csv` |
-| YSO | `data/yso/mdots_forclement.dat` |
+| YSO | `data/yso/Manara_et_al_2022.dat` |
 | Compact (WD / NS / BH) | `data/compact/Power density data.csv` |
 | WD uncertainties | `data/compact/dubus_2018_wd_uncertainties.csv` |
 | SMBH | `data/compact/meyer_hofmeister_meyer_2011.csv` (unified master only) |

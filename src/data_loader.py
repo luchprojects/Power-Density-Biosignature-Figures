@@ -4,7 +4,7 @@ Data ingestion and cleaning for multi-domain power-density datasets.
 Canonical workspace inputs
 ----------------------------
 - ``data/Power density data.csv`` — compact objects (WD / NS / transient BH)
-- ``data/yso/mdots_forclement.dat`` — YSO accretion parameters (built from Manara PPVII TSV)
+- ``data/yso/Manara_et_al_2022.dat`` — YSO accretion parameters (Manara et al. 2022)
 - Manara PPVII compilation (TSV / CSV) — supplemental YSO metadata
 """
 
@@ -377,7 +377,7 @@ def _resolve_manara_compilation_path() -> Path:
 
 def _build_mdots_forclement_from_compilation(output_path: Path) -> Path:
     """
-    Derive ``mdots_forclement.dat`` from the Manara PPVII compilation.
+    Derive ``Manara_et_al_2022.dat`` from the Manara PPVII compilation.
 
     Pristine control cohort: Alcalá et al. (2017) + Manara et al. (2017) only
     (ref_xs tags Alcala+14,17,19 and Manara+16,17).
@@ -459,7 +459,7 @@ def load_mdots_forclement(path: Path | None = None, rebuild: bool = False) -> pd
     """
     Load YSO accretion parameters with Somers (2020) SPOTS-corrected masses.
 
-    Rebuilds ``mdots_forclement.dat`` from the Manara compilation by default so
+    Rebuilds ``Manara_et_al_2022.dat`` from the Manara compilation by default so
     mass calibration tracks the latest SPOTS configuration.
     """
     dat_path = path or config.MANARA_MDOTS_DAT
@@ -514,5 +514,5 @@ def load_mdots_forclement(path: Path | None = None, rebuild: bool = False) -> pd
 
 
 def load_yso_control_group() -> pd.DataFrame:
-    """Load YSO control data from mdots_forclement.dat (built from Manara if needed)."""
+    """Load YSO control data from Manara_et_al_2022.dat (built from Manara if needed)."""
     return load_mdots_forclement()

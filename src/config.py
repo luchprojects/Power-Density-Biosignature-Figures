@@ -23,7 +23,7 @@ FIGURES_DIR = PROJECT_ROOT / "figures"
 
 COMPACT_OBJECTS_CSV = DATA_COMPACT_DIR / "Power density data.csv"
 SMBH_OBJECTS_CSV = DATA_COMPACT_DIR / "meyer_hofmeister_meyer_2011.csv"
-MANARA_MDOTS_DAT = DATA_YSO_DIR / "mdots_forclement.dat"
+MANARA_MDOTS_DAT = DATA_YSO_DIR / "Manara_et_al_2022.dat"
 
 # ---------------------------------------------------------------------------
 # Fundamental physical constants (SI)

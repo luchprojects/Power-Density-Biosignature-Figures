@@ -45,7 +45,7 @@ def parse_arguments() -> argparse.Namespace:
         "--mdots-dat",
         type=Path,
         default=config.MANARA_MDOTS_DAT,
-        help="YSO mdots_forclement.dat path",
+        help="YSO Manara et al. 2022 data path",
     )
     parser.add_argument(
         "--verbose",
