@@ -38,6 +38,6 @@ Power Density as a Biosignature/
 | YSO | `data/yso/mdots_forclement.dat` |
 | Compact (WD / NS / BH) | `data/compact/Power density data.csv` |
 | WD uncertainties | `data/compact/dubus_2018_wd_uncertainties.csv` |
-| SMBH | `data/compact/vidal_2020_table5_smbh_seyfert1.csv` (unified master only) |
+| SMBH | `data/compact/meyer_hofmeister_meyer_2011.csv` (unified master only) |
 
 

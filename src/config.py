@@ -22,7 +22,7 @@ DATA_YSO_DIR = DATA_DIR / "yso"
 FIGURES_DIR = PROJECT_ROOT / "figures"
 
 COMPACT_OBJECTS_CSV = DATA_COMPACT_DIR / "Power density data.csv"
-SMBH_OBJECTS_CSV = DATA_COMPACT_DIR / "vidal_2020_table5_smbh_seyfert1.csv"
+SMBH_OBJECTS_CSV = DATA_COMPACT_DIR / "meyer_hofmeister_meyer_2011.csv"
 MANARA_MDOTS_DAT = DATA_YSO_DIR / "mdots_forclement.dat"
 
 # ---------------------------------------------------------------------------
