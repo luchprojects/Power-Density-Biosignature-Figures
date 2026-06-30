@@ -1,6 +1,8 @@
 # Power Density as a Biosignature
 
-Generate two publication figures: mass vs. power density (Φ_m in W·kg⁻¹).
+This repository contains the data and script used to generate power density plots (mass vs. power density (Φ_m in W·kg⁻¹)), in the paper:
+**Power Density as a Universal Biosignature: An Application to the Stellivore Hypothesis** by Clément Vidal & Luciano Kadian (to appear). 
+
 
 ## Quick start
 
