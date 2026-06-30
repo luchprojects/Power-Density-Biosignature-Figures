@@ -19,21 +19,11 @@ DATA_DIR = PROJECT_ROOT / "data"
 DATA_BIOLOGY_DIR = DATA_DIR / "biology"
 DATA_COMPACT_DIR = DATA_DIR / "compact"
 DATA_YSO_DIR = DATA_DIR / "yso"
-REFERENCES_DIR = PROJECT_ROOT / "references"
-MANUSCRIPT_DIR = PROJECT_ROOT / "manuscript"
-SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 FIGURES_DIR = PROJECT_ROOT / "figures"
-PROCESSED_DIR = PROJECT_ROOT / "processed"
-DOCS_DIR = PROJECT_ROOT / "docs"
 
 COMPACT_OBJECTS_CSV = DATA_COMPACT_DIR / "Power density data.csv"
 SMBH_OBJECTS_CSV = DATA_COMPACT_DIR / "vidal_2020_table5_smbh_seyfert1.csv"
 MANARA_MDOTS_DAT = DATA_YSO_DIR / "mdots_forclement.dat"
-MANARA_COMPILATION_TSV = DATA_YSO_DIR / "manara_2022_ppvii.tsv"
-LEGACY_WD_TABLE = DATA_COMPACT_DIR / "Power density data  - Table 1 accreting WDs.csv"
-VIDAL_PDF = REFERENCES_DIR / (
-    "Vidal-2020-ERD as a technosignature - case for stellivores V1.5.pdf"
-)
 
 # ---------------------------------------------------------------------------
 # Fundamental physical constants (SI)
@@ -66,6 +56,9 @@ WHITE_DWARF_DISPLAY_TRACK = "nuclear"
 # Thin-disc accretion onto a non-rotating (Schwarzschild) BH: binding energy at ISCO.
 # Frank, King & Raine (2002) Accretion Power in Astrophysics, 3rd ed., Ch. 7 (~0.057 c^2).
 SMBH_ACCRETION_EFFICIENCY = 0.057
+# Radiatively inefficient (ADAF-like) floor and maximally spinning Kerr ISCO ceiling.
+SMBH_ACCRETION_EFFICIENCY_MIN = 0.001
+SMBH_ACCRETION_EFFICIENCY_MAX = 0.32
 DEFAULT_NEUTRON_STAR_RADIUS_M = 1.2e4
 DEFAULT_STELLAR_MASS_BLACK_HOLE_RADIUS_SOLAR = 2.95e-5
 DEFAULT_WHITE_DWARF_RADIUS_SOLAR = 0.011
@@ -81,6 +74,7 @@ REFERENCE_LINE_ALPHA = 0.92
 
 COLOR_REF_CHAISSON_SOCIETY = "#b45309"    # amber — modern society (Chaisson 2001, p. 139)
 COLOR_REF_VAN_DUIN = "#4f46e5"            # indigo — dissipative ceiling (van Duin 2024)
+COLOR_REF_SMBH_ETA_LIMIT = "#78716c"      # stone — accretion-η bracket on SMBH cohort
 
 # Chaisson (2001, Cosmic Evolution, p. 139) — modern society benchmark only
 CHAISSON_2001_SOCIETY_W_PER_KG = 50.0
@@ -257,14 +251,32 @@ LEGEND_ZORDER = 5
 LEGEND_FRAMEALPHA = 1.0
 # Per-figure legend anchors — collision-free journal layout
 LEGEND_LOC_UPPER_RIGHT = "upper right"
+LEGEND_LOC_UPPER_LEFT = "upper left"
 LEGEND_LOC_LOWER_LEFT = "lower left"
 LEGEND_LOC_LOWER_RIGHT = "lower right"
 LEGEND_LAYOUT: dict[str, dict[str, object]] = {
-    "unified": {"loc": LEGEND_LOC_UPPER_RIGHT},
+    "unified": {
+        "loc": LEGEND_LOC_UPPER_RIGHT,
+        "bbox_to_anchor": (1.0, 1.0),
+        "fontsize": 8.5,
+        "markerscale": 0.72,
+        "handlelength": 1.32,
+        "handletextpad": 0.27,
+        "labelspacing": 0.24,
+        "borderaxespad": 0.18,
+    },
     "biology": {"loc": LEGEND_LOC_LOWER_LEFT},
     "compact": {"loc": LEGEND_LOC_UPPER_RIGHT},
     "wd_uncertainties": {"loc": LEGEND_LOC_UPPER_RIGHT},
-    "smbh": {"loc": LEGEND_LOC_UPPER_RIGHT},
+    "smbh": {
+        "loc": LEGEND_LOC_UPPER_LEFT,
+        "fontsize": 7,
+        "markerscale": 0.6,
+        "handlelength": 1.1,
+        "handletextpad": 0.25,
+        "labelspacing": 0.22,
+        "borderaxespad": 0.3,
+    },
 }
 PLOT_GRID_COLOR = "#cbd5e1"
 PLOT_GRID_ALPHA_MAJOR = 0.30
@@ -277,46 +289,29 @@ MASTER_RHO_MAX_WKG = 1.0e11
 # Log-axis bounds in SI (kg, W.kg-1)
 
 FIGURE_UNIFIED_MASTER_PDF = FIGURES_DIR / "figure_unified_master.pdf"
-
-FIGURE_BIOLOGY_PDF = FIGURES_DIR / "figure_biology.pdf"
 FIGURE_COMPACT_OBJECTS_PDF = FIGURES_DIR / "figure_compact_objects.pdf"
 FIGURE_COMPACT_PDF = FIGURE_COMPACT_OBJECTS_PDF  # backward-compatible alias
-FIGURE_WD_DUBUS_UNCERTAINTIES_PDF = FIGURES_DIR / "figure_wd_dubus_uncertainties.pdf"
-FIGURE_SMBH_PDF = FIGURES_DIR / "figure_smbh_seyfert1.pdf"
-FIGURE_BIOLOGY_TRENDS_PDF = FIGURES_DIR / "figure_biology_trends.pdf"
-FIGURE_COMPACT_OBJECTS_TRENDS_PDF = FIGURES_DIR / "figure_compact_objects_trends.pdf"
-FIGURE_UNIFIED_MASTER_TRENDS_PDF = FIGURES_DIR / "figure_unified_master_trends.pdf"
-FIGURE_REFERENCE_DOC = DOCS_DIR / "Figure_Dataset_Reference_Analysis.docx"
 
-# Power-law trend-line styling (OLS fits in log10-log10 space; see scripts/figure_trends.py).
-# Distinct from the solid literature reference lines so fits read as derived, not measured.
-TREND_FIT_LINESTYLE_GROUP = "--"      # per-group (segment / category) fit
-TREND_FIT_LINESTYLE_OVERALL = "-."    # global fit across all points
-TREND_FIT_LINEWIDTH_GROUP = 1.3
-TREND_FIT_LINEWIDTH_OVERALL = 1.8
-TREND_FIT_ALPHA = 0.9
-TREND_OVERALL_COLOR = "#1a1a2e"       # neutral dark — domain-agnostic global fit
-TREND_FIT_SAMPLE_COUNT = 100
-
-# Unified-master cross-domain trend lines — distinct from the empirical scatter palette
-# (YSO/WD/NS/BH + biology segments) and the literature reference lines.
-TREND_ALL_SYSTEMS_COLOR = "#111827"   # near-black — headline cross-domain fit (dash-dot, heavy)
-TREND_ALL_BIOLOGY_COLOR = "#7e22ce"   # violet — biology overall fit (dashed)
-TREND_ALL_COMPACT_COLOR = "#be123c"   # crimson — compact overall fit (dashed)
-
-PROCESSED_COMPACT_CSV = PROCESSED_DIR / "processed_compact_results.csv"
-PROCESSED_SMBH_CSV = PROCESSED_DIR / "processed_smbh_results.csv"
-PROCESSED_YSO_CSV = PROCESSED_DIR / "processed_yso_results.csv"
 VON_DUIN_ERD_CSV = DATA_BIOLOGY_DIR / "von_duin_2024_erd_moesm1.csv"
-PROCESSED_BIOLOGY_CSV = PROCESSED_DIR / "processed_von_duin_biology.csv"
-PROCESSED_SI_CSV = PROCESSED_DIR / "power_density_si.csv"
-DATA_TRACKING_LEDGER_CSV = PROCESSED_DIR / "data_tracking_ledger.csv"
-PROVENANCE_MANIFEST_JSON = PROCESSED_DIR / "provenance_manifest.json"
+
+# Optional rebuild sources (not required for python main.py with committed CSVs)
+REFERENCES_DIR = PROJECT_ROOT / "references"
+MANARA_COMPILATION_TSV = DATA_YSO_DIR / "manara_2022_ppvii.tsv"
+LEGACY_WD_TABLE = DATA_COMPACT_DIR / "Power density data  - Table 1 accreting WDs.csv"
+VIDAL_PDF = REFERENCES_DIR / (
+    "Vidal-2020-ERD as a technosignature - case for stellivores V1.5.pdf"
+)
 
 # ApJ axis labels — SI units on all publication figures (always W·kg⁻¹ for Φ_m)
 AXIS_LABEL_MASS = rf"Mass $[\mathrm{{{MASS_UNIT}}}]$"
 AXIS_LABEL_POWER_DENSITY = r"Power Density $\Phi_m$ ($\mathrm{W \cdot kg^{-1}}$)"
 VAN_DUIN_LEGEND_LABEL = r"Stability Boundary (van Duin 2024)"
+SMBH_ETA_MAX_LEGEND_LABEL = r"Accretion $\eta = 0.32$ (upper limit)"
+SMBH_ETA_MIN_LEGEND_LABEL = r"Accretion $\eta = 0.001$ (lower limit)"
+SMBH_ETA_LIMIT_ELINEWIDTH = 0.85
+SMBH_ETA_LIMIT_CAPSIZE = 2.5
+SMBH_ETA_LIMIT_ALPHA = 0.75
+SMBH_ETA_LIMIT_ZORDER = 1.8
 
 MASTER_FIGURE_PATH = FIGURE_UNIFIED_MASTER_PDF
 MASTER_FIGURE_PDF = FIGURE_UNIFIED_MASTER_PDF
@@ -329,7 +324,8 @@ DOMAIN_YSO_RHO = (1.0e-8, 1.0e-3)  # full Manara sample (~2e-8–7e-4 W·kg⁻¹
 DOMAIN_COMPACT_MASS = (1.0e28, 1.0e32)
 DOMAIN_COMPACT_RHO = (1.0e-8, 1.0e4)  # WD Dubus error bars extend to ~3e-7 W·kg⁻¹
 DOMAIN_SMBH_MASS = (1.0e34, 1.0e39)
-DOMAIN_SMBH_RHO = (1.0e-2, 1.0e1)  # Phi_m from eta=0.057 thin-disc accretion (~0.02–1.5 W·kg⁻¹)
+# Fallback only — smbh panel auto-scales to η = 0.001 … 0.32 bracket extrema.
+DOMAIN_SMBH_RHO = (1.0e-4, 1.0e2)
 
 # ApJ defense-grade colorblind-safe empirical palette
 # Empirical scatter — standard distinct colors (identical across all figures & reference tables)

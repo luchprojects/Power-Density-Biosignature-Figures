@@ -605,7 +605,39 @@ def _finalize_log_axes(axis: Axes) -> None:
     _finalize_axes(axis)
 
 
-def _axis_limits_for_mode(mode: FigureMode) -> tuple[tuple[float, float], tuple[float, float]]:
+def _padded_log_limits(values: np.ndarray, *, pad_decades: float = 0.2) -> tuple[float, float]:
+    """Log-axis viewport with fractional-decade headroom beyond data extrema."""
+    positive = np.asarray(values, dtype=float)
+    positive = positive[np.isfinite(positive) & (positive > 0)]
+    if positive.size == 0:
+        raise ValueError("Cannot derive log limits from empty or non-positive values.")
+    log_lo = np.floor(np.log10(positive.min())) - pad_decades
+    log_hi = np.ceil(np.log10(positive.max())) + pad_decades
+    return float(10**log_lo), float(10**log_hi)
+
+
+def _smbh_axis_limits(smbH_results: pd.DataFrame) -> tuple[tuple[float, float], tuple[float, float]]:
+    """SMBH zoom viewport spanning η = 0.001 … 0.32 brackets on every point."""
+    rows = _smbh_gravitational_rows(smbH_results)
+    if rows.empty:
+        return config.DOMAIN_SMBH_MASS, config.DOMAIN_SMBH_RHO
+
+    mass = _mass_kg_from_frame(rows)
+    rho = _rho_w_per_kg_from_frame(rows)
+    rho_bracket = np.concatenate(
+        [
+            rho,
+            _smbh_rho_at_eta(rho, config.SMBH_ACCRETION_EFFICIENCY_MIN),
+            _smbh_rho_at_eta(rho, config.SMBH_ACCRETION_EFFICIENCY_MAX),
+        ]
+    )
+    return _padded_log_limits(mass), _padded_log_limits(rho_bracket)
+
+
+def _axis_limits_for_mode(
+    mode: FigureMode,
+    smbH_results: pd.DataFrame | None = None,
+) -> tuple[tuple[float, float], tuple[float, float]]:
     if mode == "unified":
         return (UNIFIED_XLIM, UNIFIED_YLIM)
     if mode == "biology":
@@ -615,6 +647,8 @@ def _axis_limits_for_mode(mode: FigureMode) -> tuple[tuple[float, float], tuple[
     if mode == "wd_uncertainties":
         return (config.DOMAIN_COMPACT_MASS, config.DOMAIN_COMPACT_RHO)
     if mode == "smbh":
+        if smbH_results is not None and not smbH_results.empty:
+            return _smbh_axis_limits(smbH_results)
         return (config.DOMAIN_SMBH_MASS, config.DOMAIN_SMBH_RHO)
     raise ValueError(f"Unknown figure mode: {mode!r}")
 
@@ -659,11 +693,13 @@ def _apply_apj_legend(axis: Axes, mode: FigureMode | str) -> None:
         facecolor="#ffffff",
         edgecolor="#e2e8f0",
         framealpha=config.LEGEND_FRAMEALPHA,
-        markerscale=1.0,
+        markerscale=layout.pop("markerscale", 1.0),
         handletextpad=layout.pop("handletextpad", 0.4),
         borderaxespad=layout.pop("borderaxespad", 0.5),
         handlelength=layout.pop("handlelength", 2.0),
         labelspacing=layout.pop("labelspacing", 0.4),
+        ncol=layout.pop("ncol", 1),
+        columnspacing=layout.pop("columnspacing", 2.0),
         **layout,
     )
     legend.set_zorder(config.LEGEND_ZORDER)
@@ -1024,9 +1060,74 @@ def _plot_wd_dubus_uncertainties(
         )
 
 
+def _smbh_gravitational_rows(smbH_results: pd.DataFrame) -> pd.DataFrame:
+    """SMBH cohort plotted on the thin-disc track (η = SMBH_ACCRETION_EFFICIENCY)."""
+    return smbH_results[smbH_results["track"] == "gravitational"].copy()
+
+
+def _smbh_rho_at_eta(rho_nominal: np.ndarray, eta: float) -> np.ndarray:
+    """Rescale Φ_m at fixed Ṁ and M: Φ_m ∝ η."""
+    scale = eta / config.SMBH_ACCRETION_EFFICIENCY
+    return np.asarray(rho_nominal, dtype=float) * scale
+
+
+def _plot_smbh_eta_limit_bars(
+    axis: Axes,
+    smbH_results: pd.DataFrame,
+    *,
+    show_legend: bool = True,
+) -> None:
+    """
+    Vertical η brackets on each SMBH point: lower η = 0.001, upper η = 0.32
+    relative to the nominal thin-disc track at η = 0.057.
+    """
+    rows = _smbh_gravitational_rows(smbH_results)
+    if rows.empty:
+        return
+
+    x_arr = _mass_kg_from_frame(rows)
+    y_arr = _rho_w_per_kg_from_frame(rows)
+    y_lo = _smbh_rho_at_eta(y_arr, config.SMBH_ACCRETION_EFFICIENCY_MIN)
+    y_hi = _smbh_rho_at_eta(y_arr, config.SMBH_ACCRETION_EFFICIENCY_MAX)
+    yerr = np.array([y_arr - y_lo, y_hi - y_arr])
+
+    axis.errorbar(
+        x_arr,
+        y_arr,
+        yerr=yerr,
+        fmt="none",
+        linestyle="none",
+        elinewidth=config.SMBH_ETA_LIMIT_ELINEWIDTH,
+        capsize=config.SMBH_ETA_LIMIT_CAPSIZE,
+        capthick=config.SMBH_ETA_LIMIT_ELINEWIDTH,
+        ecolor=mcolors.to_rgba(config.COLOR_REF_SMBH_ETA_LIMIT, config.SMBH_ETA_LIMIT_ALPHA),
+        zorder=config.SMBH_ETA_LIMIT_ZORDER,
+    )
+
+    # Legend proxies — SMBH zoom panel only; unified master keeps bars unlabeled.
+    if not show_legend:
+        return
+
+    for label in (config.SMBH_ETA_MAX_LEGEND_LABEL, config.SMBH_ETA_MIN_LEGEND_LABEL):
+        axis.errorbar(
+            [np.nan],
+            [np.nan],
+            yerr=[[np.nan], [np.nan]],
+            fmt="none",
+            linestyle="none",
+            elinewidth=config.SMBH_ETA_LIMIT_ELINEWIDTH,
+            capsize=config.SMBH_ETA_LIMIT_CAPSIZE,
+            capthick=config.SMBH_ETA_LIMIT_ELINEWIDTH,
+            ecolor=config.COLOR_REF_SMBH_ETA_LIMIT,
+            alpha=config.SMBH_ETA_LIMIT_ALPHA,
+            zorder=config.SMBH_ETA_LIMIT_ZORDER,
+            label=label,
+        )
+
+
 def _plot_smbh_scatter(axis: Axes, smbH_results: pd.DataFrame) -> None:
     """Seyfert 1 SMBH test panel — Vidal (2020) Table 5 (Meyer-Hofmeister & Meyer 2011)."""
-    rows = smbH_results[smbH_results["track"] == "gravitational"].copy()
+    rows = _smbh_gravitational_rows(smbH_results)
     if rows.empty:
         return
 
@@ -1059,7 +1160,7 @@ def create_domain_figure(
         biology_samples = generate_biological_scatter_samples()
     _apply_apj_style()
 
-    mass_limits, rho_limits = _axis_limits_for_mode(mode)
+    mass_limits, rho_limits = _axis_limits_for_mode(mode, smbH_results)
     figure_size = config.MASTER_FIGURE_SIZE if mode == "unified" else config.DOMAIN_FIGURE_SIZE
     figure, axis = plt.subplots(figsize=figure_size)
     _configure_axes(axis, mass_limits, rho_limits)
@@ -1076,6 +1177,7 @@ def create_domain_figure(
         )
         if smbH_results is not None and not smbH_results.empty:
             _plot_smbh_scatter(axis, smbH_results)
+            _plot_smbh_eta_limit_bars(axis, smbH_results, show_legend=False)
         _plot_yso_scatter(
             axis,
             yso_results,
@@ -1094,6 +1196,7 @@ def create_domain_figure(
         if smbH_results is None or smbH_results.empty:
             raise ValueError("SMBH figure requires processed SMBH results.")
         _plot_smbh_scatter(axis, smbH_results)
+        _plot_smbh_eta_limit_bars(axis, smbH_results)
     if mode in {"unified", "biology"}:
         _plot_von_duin_biology_scatter(axis, biology_samples, mode=mode)
 
@@ -1143,7 +1246,7 @@ def create_unified_master_figure(
 
 
 def _clear_existing_figures() -> None:
-    """Remove stale figure outputs before regenerating (PDF only)."""
+    """Remove stale figure outputs before regenerating."""
     config.FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     for path in config.FIGURES_DIR.glob("*.pdf"):
         path.unlink()
@@ -1158,8 +1261,10 @@ def _clear_existing_figures() -> None:
 
 
 def _save_figure_pdf(figure: Figure, pdf_path: Path) -> Path:
+    """Save vector PDF for publication."""
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(pdf_path, bbox_inches="tight", pad_inches=0.05)
+    save_kwargs = {"bbox_inches": "tight", "pad_inches": 0.05}
+    figure.savefig(pdf_path, **save_kwargs)
     plt.close(figure)
     return pdf_path
 
@@ -1171,19 +1276,16 @@ def save_all_figures(
     smbH_results: pd.DataFrame | None = None,
 ) -> dict[str, Path]:
     """
-    Export ApJ publication figures (vector PDF only).
+    Export publication figures as vector PDF.
 
-    Unified master: scatter only (includes Seyfert 1 SMBHs). Zoom panels: error bars only
-    when datasets supply them. SMBH zoom panel remains available separately.
+    Unified master includes biology, YSO, compact objects, and SMBH scatter.
+    Compact panel: WDs with Dubus uncertainties, NSs, and transient BHs.
     """
     _clear_existing_figures()
 
     domain_specs: list[tuple[FigureMode, Path]] = [
         ("unified", config.FIGURE_UNIFIED_MASTER_PDF),
-        ("biology", config.FIGURE_BIOLOGY_PDF),
         ("compact", config.FIGURE_COMPACT_OBJECTS_PDF),
-        ("wd_uncertainties", config.FIGURE_WD_DUBUS_UNCERTAINTIES_PDF),
-        ("smbh", config.FIGURE_SMBH_PDF),
     ]
 
     saved: dict[str, Path] = {}
@@ -1195,9 +1297,9 @@ def save_all_figures(
             biology_samples=biology_samples,
             smbH_results=smbH_results,
         )
-        out_path = _save_figure_pdf(figure, pdf_path)
-        saved[f"{mode}_pdf"] = out_path
+        pdf_path = _save_figure_pdf(figure, pdf_path)
+        saved[f"{mode}_pdf"] = pdf_path
         if mode == "compact":
-            saved["compact_objects_pdf"] = out_path
+            saved["compact_objects_pdf"] = pdf_path
 
     return saved

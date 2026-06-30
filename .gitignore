@@ -1,5 +1,3 @@
-# Power Density as a Biosignature — git ignore
-
 __pycache__/
 *.py[cod]
 *.pyo
@@ -9,12 +7,6 @@ __pycache__/
 venv/
 env/
 
-# OS / editor
 .DS_Store
 Thumbs.db
 *.swp
-
-# Optional local scratch (not part of deliverables)
-_integrity_check.txt
-_audit_labels.txt
-scripts/_*.txt
